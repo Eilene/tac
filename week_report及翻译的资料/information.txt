@@ -1,0 +1,47 @@
+The US National Institute of Standards and Technology has received your registration to participate in TAC 2017 (http://tac.nist.gov/2017/).  The following details are being recorded for your team:
+
+************ BEGIN DETAIL ************
+
+
+Team ID: ict_spring
+
+Team Password: 9Fcg;rcrstD8
+
+Organization: Institute of Computing Technology，Chinese Academy
+
+Postal Mailing Address:
+China,
+Haidian District of Beijing City，6 of Zhongguancun South Road
+Institute of Computing Technology, Chinese Academy of Sciences.
+
+
+Main Point of Contact:
+	First Name: Xu
+	Last Name: Bingbing
+	Phone Number: +86-18810220532
+	Fax Number: 
+	Email: bbingxu.ict@gmail.com
+
+Principal Investigator:
+	First Name: Du
+	Last Name: Hui
+	Email: duhui@software.ict.ac.cn
+
+Funded by these US Government Programs: 
+
+Interested in these Tracks:
+	KBP (BeSt)
+
+Technical Approach:
+Using different approaches to different situations, sentiment lexicon and syntactic analysis rules is important. Deep learning may be  good tools.
+
+Additional Notes:
+
+
+************ END DETAIL ************
+
+Please save the information in this message.  You will need to use your TAC 2017 Team ID in correspondences with NIST (when sending in the required User Agreement forms, for example). You will need both the TAC 2017 Team ID and the 12-character Team Password to access password-protected areas of the TAC 2017 web site (http://tac.nist.gov/2017/).
+
+If any of the information is incorrect, do NOT resubmit the registration form.  Send details of the problem to tac-admin@nist.gov.
+
+Thank you for participating in TAC 2017.
