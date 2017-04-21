@@ -82,8 +82,10 @@ class SentimentXmlWriter(object):
         # write context sentences sub node
         writeln(f, u'<context_sentences>', tab_level+1)
         for key,value in self._context_sents.items():
-            writeln(f, u'<sentence index="{}">{}</sentence>'.format(key,
-                value['sent_string']), tab_level+2)
+            writeln(f, u'<sentence index="{}" offset="{}" length="{}">{}</sentence>'.format(key,
+                value['start_offset'],
+                value['end_offset'] - value['start_offset'],
+                value['sent_string'].replace("<", "&lt;").replace(">", "&gt;")), tab_level+2)
         writeln(f, u'</context_sentences>', tab_level+1)
         # END write source sub node
         writeln(f, u'</sentiment>', tab_level)
@@ -501,4 +503,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
