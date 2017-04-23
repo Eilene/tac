@@ -33,24 +33,3 @@ def ereParse(str,f,target_dic):
                 .append([mention_text,mention_id,mention_type,mention_offset,mention_length])
 
     return target_dic,quote_author, post_author, source_begin
-
-'''
-print "*****handle relation****"
-target_dic["relation"] = {}
-relations = collection.getElementsByTagName("relation")
-
-for relation in relations:
-    relation_id = relation.getAttribute("id")
-    relation_type = relation.getAttribute("type")
-    relation_subtype = relation.getAttribute("subtype")
-    target_dic["relation"][relation_id,relation_type,relation_subtype] = []
-    relation_mentions = relation.getElementsByTagName("relation_mention")
-    for one_mention in relation_mentions:
-        mention_id = one_mention.getAttribute("id")
-        mention_realis = one_mention.getAttribute("realis")
-        rel_args = one_mention.getElementsByTagName()
-        target_dic["relation"][relation_id, relation_type,relation_subtype]\
-            .append([mention_id,mention_type,mention_offset,mention_length])
-print target_dic
-'''
-
