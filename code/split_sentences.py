@@ -8,19 +8,19 @@ import sys
 
 
 # 分句
-# 传入source文件全部文本，返回句子及每句起始偏移量
+# 参数：source文件全部文本，返回值：句子及每句起始偏移量
 def split_sentences(whole_text):
     # 先把各标签中的段落抽出来
-    paras = re.findall(r'>([\s\S]*?)<', whole_text)
-    paras.remove('\n')
+    paras = re.findall(r'>([\s\S]*?)<', whole_text)  # 是否会有非html标签的><，注意看具体文件
     # 再分句
     # 中间\n好像都未分，是不是本来就不该分，会有强行换行存在
     # 有些符号没分，如“...”，好像不太合理
     texts = []
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
     for para in paras:
-        sub_texts = tokenizer.tokenize(para)
-        texts.extend(sub_texts)
+        if para != '\n':  # 会不会有多个回车的？如果有可能影响后面index，必须处理掉
+            sub_texts = tokenizer.tokenize(para)
+            texts.extend(sub_texts)
     # 查找偏移量
     sencs = []
     start = 0
@@ -30,28 +30,31 @@ def split_sentences(whole_text):
             print "error: cannot find sentence in source text"
             sys.exit()
         start = index + len(text)
-        sen = {'offset': index, 'text': text.strip('\n')}
+        sen = {'offset': index, 'text': text}  # 为了后面定位准确，这里没有去除前后的\n
         sencs.append(sen)
-    # print len(sencs)
+    # print sencs
     return sencs
 
 
 # 查找所在句子、前句、后句，由于有序，使用折半查找
-# 传入词offset和用split_sentences得到的分句结果，返回对应词的上下文句子
+# 参数：词offset和用split_sentences得到的分句结果，返回值：对应词的上下文句子
 def find_context(word_offset, sencs, whole_text):
     cx = {}
     begin = 0
     last = len(sencs) - 1
-    if begin > last:
+    if sencs[0]['offset'] > word_offset:  # 比第一句还前的肯定是源，就不找了
         return
+    if begin > last:
+        return  # 没找到，一般该词是源
     while begin <= last:
         mid = (begin + last) / 2
-        if (mid == len(sencs)-1 and sencs[mid]['offset'] <= word_offset)\
+        if (mid == len(sencs)-1 and sencs[mid]['offset'] <= word_offset) \
                 or (mid < len(sencs)-1 and sencs[mid]['offset'] <= word_offset < sencs[mid+1]['offset']):
+            if sencs[mid]['offset']+len(sencs[mid]['text']) < word_offset:
+                return  # 词offset大于该句子范围，说明在html标签内，是源
             cx[0] = sencs[mid]
             if mid > 0:
-                # 判断和和上句之间有没有html标签
-                # 由于strip，截取长度不太精确，但应该不影响
+                # 判断和上句之间有没有html标签
                 sub_string = whole_text[sencs[mid-1]['offset']+len(sencs[mid-1]['text']): sencs[mid]['offset']]
                 if re.search(r'<[^>]+>', sub_string):  # 如果有，不要上句
                     cx[-1] = ''
@@ -75,7 +78,7 @@ def find_context(word_offset, sencs, whole_text):
             last = mid - 1
 
 
-# 传入source和ere文件，返回ere文件中所有entity_mention的id和对应句子
+# 参数：source和ere文件名，返回值：ere文件中所有entity_mention的id和对应句子
 def get_contexts(source_filename, ere_filename):
     source_fp = open(source_filename)
     all_source_text = source_fp.read().decode("utf-8")  # 注意编码
@@ -100,8 +103,8 @@ def get_contexts(source_filename, ere_filename):
 
 
 if __name__ == '__main__':
-    id_sencs = get_contexts("data\\source\\0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
-                            "data\\ere\\0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml")
+    id_sencs = get_contexts("data/2016E27_V2/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
+                            "data/2016E27_V2/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml")
     print id_sencs
 
 
