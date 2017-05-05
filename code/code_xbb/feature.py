@@ -1,56 +1,110 @@
 # -*- coding:UTF-8 -*-
 from Constant import *
 import pandas as pd
-from raw_feature import sentence_feature
 import numpy as np
+# from word_count import dictionary,embeddings_index
+from word_count import dictionary,embeddings_index
+from pattern.en import sentiment
+from pattern.en import lemma
+import nltk
 
-def get_feature():
+#先不考虑类别信息，只用词向量
+#获取一个句子的feature，是一个矩阵（单词个数＊feature_num),包括每个词的词性，情感极性，主动性，词频，出现词序，词向量
+def sentence_feature(sentence):
+    word = {}
+    feature = []
+    feature_cata = []
+    #分词及词性
+    word_token = nltk.pos_tag(nltk.word_tokenize(sentence))
+    #词干还原作为key存在word中
+    for i in word_token:
+        word[lemma(i[0])] = [i[1]]
 
-    raw_df = pd.read_csv(Write_path)
-    raw_df = raw_df.loc[:, ['entity_type', 'entity_specificity', 'mention_type', 'mention_length',
-                            'pre_sentence', 'now_sentence', 'next_sentence', 'label_polarity', 'file']]
-    TrainX = []
-    TrainX_cata = []
-    TrainY = []
+    #计算词的情感极性和主动性#计算词频和出现的次序
+    for i in word:
+        # word[i].append(sentiment(i)[0])
+        # word[i].append(sentiment(i)[1])
+        # if(i in dictionary):
+        #     word[i].append(dictionary[i][0])
+        #     word[i].append(dictionary[i][1])
+        # else:
+        #     word[i].append(0)
+        #     word[i].append(0)
 
-    for i in raw_df.values:
-        # 计算数值特征
-        # 截断补齐,不是单个句子截断，而是三个句子拼在一起，把含有target的句子放在最前面
-        temp = sentence_feature(i[4],int(i[3]))[0] + sentence_feature(i[5],int(i[3]))[0] + sentence_feature(i[6],int(i[3]))[0]
-        if (len(temp) > Sentence_length):
-            temp = temp[:Sentence_length]
+        if(i in embeddings_index):
+            word[i] += list(embeddings_index[i])
         else:
-            temp = temp + ([[0.01] * num_feature_num]) * (Sentence_length - len(temp))
+            word[i] += [0.01]*100
 
-        #计算类别特征
-        temp_cata = sentence_feature(i[4],int(i[3]))[1] + sentence_feature(i[5],int(i[3]))[1] + sentence_feature(i[6],int(i[3]))[1]
-        if(len(temp_cata) < Sentence_length):
-            temp_cata = temp_cata + ['None']*(Sentence_length-len(temp_cata))
-        for j in range(0,Sentence_length):
-            TrainX_cata.append([i[0],i[1],i[2]]+[temp_cata[j]])
+    #返回sentence 对应的feature向量
+    for i in word_token:
+        feature.append(word[lemma(i[0])][1:])#数值型特征
+        feature_cata.append(word[lemma(i[0])][0])
+    #截断补齐
+    if(len(feature) < Sentence_length):
+        feature += [[0.1]*(100)]*(Sentence_length - len(feature))
+    if(len(feature) > Sentence_length):
+        feature = feature[:Sentence_length]
+    return [feature,feature_cata]
 
-        # 先不考虑类别特征和窗口，只靠三个句子带来的信息
-        TrainX.append(temp)
-        if (i[7] == "None"):
-            TrainY.append([[1, 0, 0]])
-        elif (i[7] == "pos"):
-            TrainY.append([[0, 1, 0]])
+def get_feature(mode,path):
+    df = pd.read_csv(path)
+    Train_X = []
+    #TrainX_cata = []
+    Train_Y = []
+    count1 = 0
+    count2 = 0
+    for i in df.values:
+        if(mode==2):
+            if(i[-1] == 'neg'):
+                count1 += 1
+                if(count1 > 1000):
+                    continue
+            if(i[-1] == 'pos'):
+                count2 += 1
+                if(count2 > 1000):
+                    continue
+        if(mode == 2 and (i[-1]=='neg' or i[-1] == 'pos')):
+            Train_X.append(sentence_feature(i[0])[0])
+        # temp_cata = sentence_feature(i[0])[1]
+        # if (len(temp_cata) < Sentence_length):
+        #     temp_cata = temp_cata + ['None'] * (Sentence_length - len(temp_cata))
+        # for j in range(0, Sentence_length):
+        #     TrainX_cata.append([i[3], i[4], i[7]] + [temp_cata[j]])
+        if(mode == 1):
+            if (i[-1] == 'None'):
+                Train_Y.append([0])
+            else:
+                Train_Y.append([1])
         else:
-            TrainY.append([[0, 0, 1]])
+            if (i[-1] == 'neg'):
+                Train_Y.append([0])
+            if (i[-1] == 'pos'):
+                Train_Y.append([1])
 
-    # 对类别特征独热编码
-    TrainX_cata = pd.DataFrame(TrainX_cata)
-    TrainX_cata = pd.get_dummies(TrainX_cata)
-    TrainX_cata = TrainX_cata.values
-    cata_feature_num = TrainX_cata.shape[1]
+    #对类别特征独热编码
+    # TrainX_cata = pd.DataFrame(TrainX_cata)
+    # TrainX_cata = pd.get_dummies(TrainX_cata)
+    # TrainX_cata = TrainX_cata.values
+    # cata_feature_num = TrainX_cata.shape[1]
 
-    count = 0
-    for i in range(0, len(TrainX)):
-        for j in range(0, len(TrainX[i])):
-            TrainX[i][j] = TrainX[i][j] + list(TrainX_cata[count])
-            count += 1
+    # count = 0
+    # for i in range(0, len(Train_X)):
+    #     for j in range(0, len(Train_X[i])):
+    #         Train_X[i][j] = Train_X[i][j] + list(TrainX_cata[count])+[0] *(54- cata_feature_num)
+    #         count += 1
 
-    TrainX = np.array(TrainX)
-    TrainY = np.array(TrainY)
+    #类别个数不一致，应该先所有数据提特征，不能部分文件提，不然one-hotencoding后数据维数不一致,现在先用58
 
-    return TrainX,TrainY,cata_feature_num
+
+    #转化成单通道输入方式
+    Train_Y = np.array(Train_Y)
+    print np.array(Train_X).shape,Train_Y.shape
+    data = np.empty((Train_Y.shape[0], Sentence_length, 100, 1), dtype='float32')
+    #Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
+    cnt = 0
+    for i in Train_X:
+        data[cnt, :, :, 0] = i
+        cnt += 1
+    Train_X = data
+    return Train_X,Train_Y

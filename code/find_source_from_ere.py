@@ -4,7 +4,7 @@ import os
 import pandas as pd 
 import xml.dom.minidom
 
-root = '/home/apple/best/data/'
+root = '/Users/eilene/Desktop/tac/code/data/'
 
 def parse_entity(parent, filename):
 	entity_pd = pd.DataFrame({})
@@ -87,6 +87,7 @@ def backspace(rootdir, sourcefile, entities):
 
 def find_source(rootdir):
 	ere_rootdir = os.path.join(root, "ere")
+	print ere_rootdir
 	for parent, dirnames, filenames in os.walk(ere_rootdir):
 		for filename in filenames:
 			print "\nfilename is :" + filename

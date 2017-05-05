@@ -103,8 +103,8 @@ def get_contexts(source_filename, ere_filename):
 
 
 if __name__ == '__main__':
-    id_sencs = get_contexts("data/2016E27_V2/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
-                            "data/2016E27_V2/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml")
+    id_sencs = get_contexts("/Users/eilene/Desktop/tac/code/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
+                            "/Users/eilene/Desktop/tac/code/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml")
     print id_sencs
 
 
