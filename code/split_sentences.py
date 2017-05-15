@@ -37,40 +37,43 @@ def split_sentences(whole_text):
 
 
 # 查找所在句子、前句、后句，由于有序，使用折半查找
-# 参数：词offset和用split_sentences得到的分句结果，返回值：对应词的上下文句子
-def find_context(word_offset, sencs, whole_text):
+# 参数：词offset和用split_sentences得到的分句结果，需要的上文句子数，下文句子数；返回值：对应词的上下文句子
+def find_context(word_offset, sencs, whole_text, above, below):
     cx = {}
+    for i in range(-above, below):  # 初始化（根据需求，也可不做，则没有的就不含该key）
+        cx[i] = ''
     begin = 0
-    last = len(sencs) - 1
+    slen = len(sencs)
+    last = slen - 1
     if sencs[0]['offset'] > word_offset:  # 比第一句还前的肯定是源，就不找了
         return
     if begin > last:
         return  # 没找到，一般该词是源
     while begin <= last:
         mid = (begin + last) / 2
-        if (mid == len(sencs)-1 and sencs[mid]['offset'] <= word_offset) \
+        if (mid == slen-1 and sencs[mid]['offset'] <= word_offset) \
                 or (mid < len(sencs)-1 and sencs[mid]['offset'] <= word_offset < sencs[mid+1]['offset']):
             if sencs[mid]['offset']+len(sencs[mid]['text']) < word_offset:
                 return  # 词offset大于该句子范围，说明在html标签内，是源
+            # 当前句子
             cx[0] = sencs[mid]
-            if mid > 0:
+            # 上文
+            for i in range(min(mid, above)):
                 # 判断和上句之间有没有html标签
-                sub_string = whole_text[sencs[mid-1]['offset']+len(sencs[mid-1]['text']): sencs[mid]['offset']]
-                if re.search(r'<[^>]+>', sub_string):  # 如果有，不要上句
-                    cx[-1] = ''
+                sub_string = whole_text[sencs[mid-i-1]['offset']+len(sencs[mid-1]['text']): sencs[mid-i]['offset']]
+                if re.search(r'<[^>]+>', sub_string) is None:  # 如果有，不要上句
+                    cx[-i-1] = sencs[mid-i-1]
                 else:
-                    cx[-1] = sencs[mid-1]
-            else:
-                cx[-1] = ''
-            if mid < len(sencs)-1:
+                    break  # 上文没有，则再上文都没有
+            # 下文
+            for i in range(min(slen-1-mid, below)):
                 # 判断和和下句之间有没有html标签
-                sub_string = whole_text[sencs[mid]['offset']+len(sencs[mid]['text']): sencs[mid+1]['offset']]
-                if re.search(r'<[^>]+>', sub_string):  # 如果有，不要下句
-                    cx[1] = ''
+                sub_string = whole_text[sencs[mid+i]['offset']+len(sencs[mid]['text']): sencs[mid+i+1]['offset']]
+                if re.search(r'<[^>]+>', sub_string) is None:  # 如果有，不要下句
+                    cx[i+1] = sencs[mid+i+1]
                 else:
-                    cx[1] = sencs[mid+1]
-            else:
-                cx[1] = ''
+                    break  # 上文没有，则再上文都没有
+            # 返回
             return cx
         elif word_offset >= sencs[mid]['offset']:
             begin = mid + 1
@@ -78,8 +81,8 @@ def find_context(word_offset, sencs, whole_text):
             last = mid - 1
 
 
-# 参数：source和ere文件名，返回值：ere文件中所有entity_mention的id和对应句子
-def get_contexts(source_filename, ere_filename):
+# 参数：source和ere文件名，所需上文、下文句子数；返回值：ere文件中所有entity_mention的id和对应句子
+def get_contexts(source_filename, ere_filename, above, below):
     source_fp = open(source_filename)
     all_source_text = source_fp.read().decode("utf-8")  # 注意编码
     sentences = split_sentences(all_source_text)  # 分句
@@ -91,7 +94,7 @@ def get_contexts(source_filename, ere_filename):
     for i in range(len(entity_mention_list)):
         ere_id = entity_mention_list[i].getAttribute('id')
         offset = int(entity_mention_list[i].getAttribute('offset'))  # 注意转整型
-        context = find_context(offset, sentences, all_source_text)  # 查找target所在上下文句子
+        context = find_context(offset, sentences, all_source_text, above, below)  # 查找target所在上下文句子
         if context is not None:  # 如果是None，则说明是源，出现在标签中的，没有上下文
             ids_with_contexts[ere_id] = context
             # -1：上一个句子；0：当前句子；1：下一个句子
@@ -103,8 +106,13 @@ def get_contexts(source_filename, ere_filename):
 
 
 if __name__ == '__main__':
-    id_sencs = get_contexts("/Users/eilene/Desktop/tac/code/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
-                            "/Users/eilene/Desktop/tac/code/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml")
+    # id_sencs = get_contexts("data/2016E27_V2/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
+    #                         "data/2016E27_V2/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml", 3, 3)
+    # print id_sencs
+
+    id_sencs = get_contexts("data/2016E27_V2/data/source/0a421343005f3241376fa01e1cb3c6fb.cmp.txt",
+                            "data/2016E27_V2/data/ere/0a421343005f3241376fa01e1cb3c6fb.rich_ere.xml", 3, 3)
+    # 3,3，表示需要上文3个句子，下文3个句子，加上当前句，共7个句子
     print id_sencs
 
 
