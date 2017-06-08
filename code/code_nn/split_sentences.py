@@ -40,7 +40,7 @@ def split_sentences(whole_text):
 # 参数：词offset和用split_sentences得到的分句结果，需要的上文句子数，下文句子数；返回值：对应词的上下文句子
 def find_context(word_offset, sencs, whole_text, above, below):
     cx = {}
-    for i in range(-above, below):  # 初始化（根据需求，也可不做，则没有的就不含该key）
+    for i in range(-above, below+1):  # 初始化（根据需求，也可不做，则没有的就不含该key）
         cx[i] = ''
     begin = 0
     slen = len(sencs)
@@ -66,7 +66,7 @@ def find_context(word_offset, sencs, whole_text, above, below):
                 else:
                     break  # 上文没有，则再上文都没有
             # 下文
-            for i in range(min(slen-1-mid, below)):
+            for i in range(min(slen-1-mid, below+1)):
                 # 判断和和下句之间有没有html标签
                 sub_string = whole_text[sencs[mid+i]['offset']+len(sencs[mid]['text']): sencs[mid+i+1]['offset']]
                 if re.search(r'<[^>]+>', sub_string) is None:  # 如果有，不要下句
@@ -106,12 +106,12 @@ def get_contexts(source_filename, ere_filename, above, below):
 
 
 if __name__ == '__main__':
-    # id_sencs = get_contexts("data/2016E27_V2/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
-    #                         "data/2016E27_V2/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml", 3, 3)
+    # id_sencs = get_contexts("../data/2016E27_V2/data/source/0ba982819aaf9f5b94a7cebd48ac6018.cmp.txt",
+    #                         "../data/2016E27_V2/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml", 3, 3)
     # print id_sencs
 
-    id_sencs = get_contexts("data/2016E27_V2/data/source/0a421343005f3241376fa01e1cb3c6fb.cmp.txt",
-                            "data/2016E27_V2/data/ere/0a421343005f3241376fa01e1cb3c6fb.rich_ere.xml", 3, 3)
+    id_sencs = get_contexts("../data/2016E27_V2/data/source/0a421343005f3241376fa01e1cb3c6fb.cmp.txt",
+                            "../data/2016E27_V2/data/ere/0a421343005f3241376fa01e1cb3c6fb.rich_ere.xml", 3, 3)
     # 3,3，表示需要上文3个句子，下文3个句子，加上当前句，共7个句子
     print id_sencs
 
