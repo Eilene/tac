@@ -110,6 +110,7 @@ if __name__ == '__main__':
     #                         "../data/2016E27_V2/data/ere/0ba982819aaf9f5b94a7cebd48ac6018.rich_ere.xml", 3, 3)
     # print id_sencs
 
+    # 测试
     id_sencs = get_contexts("../data/2016E27_V2/data/source/0a421343005f3241376fa01e1cb3c6fb.cmp.txt",
                             "../data/2016E27_V2/data/ere/0a421343005f3241376fa01e1cb3c6fb.rich_ere.xml", 3, 3)
     # 3,3，表示需要上文3个句子，下文3个句子，加上当前句，共7个句子

@@ -5,6 +5,7 @@ import xml.dom.minidom
 import pandas as pd
 # import numpy as np
 from split_sentences import split_sentences, find_context
+from constants import *
 
 
 # 将上下文字典中的文本按序拼接成字符串
@@ -106,8 +107,9 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 annotation_relation_id = annotation_relation_list[k].getAttribute('ere_id')
                 if annotation_relation_id == relation_mention_id:
                     st_em = annotation_relation_list[k].getElementsByTagName('sentiment')
-                    if len(st_em) == 0:
-                        print part_name, annotation_relation_id, relation_mention_id
+                    # if len(st_em) == 0:
+                    #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_relation_id +
+                    #                 " " + relation_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
             if label_polarity == 'none':
                 break  # 如果为none则丢弃该样本
@@ -144,7 +146,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_is_filler = 1
                 rel_arg2_id = rel_arg2.getAttribute('filler_id')
                 if rel_arg2_id == "":
-                    print part_name, relation_mention_id
+                    logger.info("错误：参数不是entity或filler。" + " " + part_name + " " + relation_mention_id)
                 rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context = \
                     rel_arg_filler_info(filler_list, rel_arg2_id, rel_arg2_text, sentences)
                 rel_arg2_mention_id = "None"
@@ -152,7 +154,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_mention_noun_type = "None"
 
             # trigger
-            trigger = relation_list[i].getElementsByTagName('trigger')
+            trigger = relation_mention_list[j].getElementsByTagName('trigger')  # ？待查
             if len(trigger) == 0:
                 trigger_offset = "None"
                 trigger_length = "None"
@@ -170,28 +172,29 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 # 拼成一个字符串
                 trigger_context = context_dict_to_string(trigger_context_dict, above, below)
 
-            relation_record = {'file': part_name,
-                      'relation_id': relation_id, 'relation_type': relation_type, 'relation_subtype': relation_subtype,
-                      'relation_mention_id': relation_mention_id, 'relation_mention_realis': relation_mention_realis,
-                      'rel_arg1_id': rel_arg1_id, 'rel_arg1_mention_id': rel_arg1_mention_id,
-                      'rel_arg1_role': rel_arg1_role, 'rel_arg1_text': rel_arg1_text,
-                      'rel_arg1_entity_type': rel_arg1_entity_type,
-                      'rel_arg1_entity_specificity': rel_arg1_entity_specificity,
-                      'rel_arg1_mention_noun_type': rel_arg1_mention_noun_type,
-                      'rel_arg1_mention_offset': rel_arg1_mention_offset,
-                      'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context': rel_arg1_context,
-                      'rel_arg2_id': rel_arg2_id, 'rel_arg2_mention_id': rel_arg2_mention_id, 
-                      'rel_arg2_role': rel_arg2_role, 'rel_arg2_text': rel_arg2_text, 
-                      'rel_arg2_entity_type': rel_arg2_entity_type,
-                      'rel_arg2_entity_specificity': rel_arg2_entity_specificity,
-                      'rel_arg2_mention_noun_type': rel_arg2_mention_noun_type,
-                      'rel_arg2_mention_offset': rel_arg2_mention_offset,
-                      'rel_arg2_mention_length': rel_arg2_mention_length, 'rel_arg2_context': rel_arg2_context,
-                      'rel_arg2_is_filler': rel_arg2_is_filler,
-                      'trigger_offset': trigger_offset, 'trigger_length': trigger_length, 'trigger_text': trigger_text,
-                      'trigger_context': trigger_context,
-                      'label_polarity': label_polarity
-                      }
+            relation_record = {
+                'file': part_name,
+                'relation_id': relation_id, 'relation_type': relation_type, 'relation_subtype': relation_subtype,
+                'relation_mention_id': relation_mention_id, 'relation_mention_realis': relation_mention_realis,
+                'rel_arg1_id': rel_arg1_id, 'rel_arg1_mention_id': rel_arg1_mention_id,
+                'rel_arg1_role': rel_arg1_role, 'rel_arg1_text': rel_arg1_text,
+                'rel_arg1_entity_type': rel_arg1_entity_type,
+                'rel_arg1_entity_specificity': rel_arg1_entity_specificity,
+                'rel_arg1_mention_noun_type': rel_arg1_mention_noun_type,
+                'rel_arg1_mention_offset': rel_arg1_mention_offset,
+                'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context': rel_arg1_context,
+                'rel_arg2_id': rel_arg2_id, 'rel_arg2_mention_id': rel_arg2_mention_id,
+                'rel_arg2_role': rel_arg2_role, 'rel_arg2_text': rel_arg2_text,
+                'rel_arg2_entity_type': rel_arg2_entity_type,
+                'rel_arg2_entity_specificity': rel_arg2_entity_specificity,
+                'rel_arg2_mention_noun_type': rel_arg2_mention_noun_type,
+                'rel_arg2_mention_offset': rel_arg2_mention_offset,
+                'rel_arg2_mention_length': rel_arg2_mention_length, 'rel_arg2_context': rel_arg2_context,
+                'rel_arg2_is_filler': rel_arg2_is_filler,
+                'trigger_offset': trigger_offset, 'trigger_length': trigger_length, 'trigger_text': trigger_text,
+                'trigger_context': trigger_context,
+                'label_polarity': label_polarity
+            }
 
             relation_records_each_file.append(relation_record)
 
@@ -219,19 +222,13 @@ def extract_relation(source_dir, ere_dir, annotation_dir):
 
 
 def write_to_csv(records, filename):
-    df = pd.DataFrame(records)  # 好像会重复多次？看看
-    print len(records)
-    print df.shape
+    df = pd.DataFrame(records)  # 好像会重复多次？看看；好像没有
+    logger.debug('记录条数：%d', len(records))
+    logger.debug('记录维数：(%d, %d)', df.shape[0], df.shape[1])
     df.to_csv(filename, encoding="utf-8", index=None)
 
 
 if __name__ == '__main__':
-
-    data_dirpath = "../data/2016E27_V2/data/"
-    source_dirpath = data_dirpath + "source/"
-    ere_dirpath = data_dirpath + "ere/"
-    annotation_dirpath = data_dirpath + "annotation/"
-
     relation_pos_neg_info = extract_relation(source_dirpath, ere_dirpath, annotation_dirpath)
     write_to_csv(relation_pos_neg_info, 'relation_pos_neg_info.csv')
 
@@ -239,4 +236,3 @@ if __name__ == '__main__':
 # 后续工作：
 # arg是filler的情况:要不要分开
 # source是xml的情况：暂时未提取这部分数据，后续是否分开提取
-# 抽取event
