@@ -10,3 +10,5 @@ data_dirpath = "../data/2016E27_V2/data/"
 source_dirpath = data_dirpath + "source/"
 ere_dirpath = data_dirpath + "ere/"
 annotation_dirpath = data_dirpath + "annotation/"
+
+glove_100d_filepath = '../data/glove.6B/glove.6B.100d.txt'

@@ -168,7 +168,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 }
                 em_args_each_file.append(em_arg_record)
 
-            relation_record = {
+            event_record = {
                 'file': part_name, 'hopper_id': hopper_id, 'event_mention_id': event_mention_id,
                 'event_mention_type': event_mention_type, 'event_mention_subtype': event_mention_subtype,
                 'event_mention_realis': event_mention_realis, 'event_mention_ways': event_mention_ways,
@@ -178,7 +178,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 'label_polarity': label_polarity
             }
 
-            event_records_each_file.append(relation_record)
+            event_records_each_file.append(event_record)
 
     return event_records_each_file, em_args_each_file
 
