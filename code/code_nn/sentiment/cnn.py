@@ -1,6 +1,5 @@
 # coding=utf-8
 
-from sklearn import metrics
 import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
 # import numpy as np
@@ -14,6 +13,9 @@ from keras.layers import Conv2D, MaxPooling2D
 from constants import *
 from read_file_info_records import *
 from write_best import *
+from evaluation import *
+
+import random
 
 
 def read_embedding_index(filename):
@@ -84,6 +86,8 @@ def gen_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
         if str_labels[i] == 'pos':
             # labels[i] = 1
             labels.append([1])
+        elif str_labels[i] == 'neg':
+            labels.append([2])
         else:
             labels.append([0])
 
@@ -109,6 +113,8 @@ def gen_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
         if str_labels[i] == 'pos':
             # labels[i] = 1
             labels.append([1])
+        elif str_labels[i] == 'neg':
+            labels.append([2])
         else:
             labels.append([0])
 
@@ -155,6 +161,8 @@ def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, cli
         if str_labels[i] == 'pos':
             # labels[i] = 1
             labels.append([1])
+        elif str_labels[i] == 'neg':
+            labels.append([2])
         else:
             labels.append([0])
 
@@ -176,17 +184,6 @@ def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, cli
     return features, labels
 
 
-def evaluation(y_test, y_predict):
-    accuracy = metrics.accuracy_score(y_test, y_predict)
-    precision = metrics.precision_score(y_test, y_predict)
-    recall = metrics.recall_score(y_test, y_predict)
-    f1 = metrics.f1_score(y_test, y_predict)
-    print "Accuracy: ", accuracy
-    print "Precision: ", precision
-    print "Recall: ", recall
-    print "F1: ", f1
-
-
 def cnn_fit(x_train, y_train):
     # 训练集进一步划分开发集
     input_shape = x_train.shape[1:]  # 与samples个数无关
@@ -196,8 +193,8 @@ def cnn_fit(x_train, y_train):
     (y_train_new, y_dev) = y_train[:split_at], y_train[split_at:]
 
     # 转换标签格式
-    y_train = keras.utils.to_categorical(y_train, 2)
-    y_dev = keras.utils.to_categorical(y_dev, 2)
+    y_train_new = keras.utils.to_categorical(y_train_new, 3)
+    y_dev = keras.utils.to_categorical(y_dev, 3)
     # print x_train, y_train
 
     # 开始建立CNN模型
@@ -207,20 +204,20 @@ def cnn_fit(x_train, y_train):
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    # model.add(Dropout(0.25))
+    # model.add(Conv2D(64, (3, 3), activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
     model.add(Flatten())
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(2, activation='softmax'))
+    model.add(Dense(3, activation='softmax'))
     # sgd = keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(loss=keras.losses.binary_crossentropy, optimizer='Adam', metrics=['accuracy'])
     model.summary()
 
-    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_dev, y_dev))
+    model.fit(x_train_new, y_train_new, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_dev, y_dev))
     score = model.evaluate(x_dev, y_dev, verbose=0)
     print 'Test loss:', score[0]
     print 'Test accuracy:', score[1]
@@ -233,7 +230,10 @@ def cnn_predict(model, x_test, y_test):
     y_predict = []
     # print probabilities
     for i in probabilities:
-        if (i[0] < i[1]):
+        # print i
+        if i[0] <= i[2] and i[1] <= i[2]:
+            y_predict.append([2])
+        elif i[0] <= i[1] and i[2] <= i[1]:
             y_predict.append([1])
         else:
             y_predict.append([0])
@@ -264,18 +264,60 @@ def get_train_samples(train_files, embeddings_index, dim, clip_length):
             x_train.extend(x_event_train)
             y_train.extend(y_event_train)
 
+    # 重采样
+    x_train, y_train = resampling(x_train, y_train)  # 效果不好，因为评测指标是有无算F，不管正负，正负只要对的多就好
+
     # 转化成单通道输入方式
-    # pos = 0
-    # neg = 0
-    # for y in y_train:
-    #     if y == [1]:
-    #         pos += 1
-    #     else:
-    #         neg += 1
-    # print "pos vs neg:", pos, neg
     x_train, y_train = convert_samples(x_train, y_train, clip_length)
 
     return x_train, y_train
+
+
+def resampling(x, y):
+    x_new = []
+    y_new = []
+
+    # 正负样本分开
+    pos_index = []
+    neg_index = []
+    none_index = []
+    datanum = len(y)
+    for i in range(datanum):
+        if y[i] == [1]:
+            pos_index.append(i)
+        elif y[i] == [2]:
+            neg_index.append(i)
+        else:
+            none_index.append(i)
+
+    # 正负样本均衡采样，有放回采样
+    pos = 0
+    neg = 0
+    none = 0
+    pos_num = len(pos_index)
+    neg_num = len(neg_index)
+    none_num = len(none_index)
+    samplenum = int(neg_num * 3)
+    for i in range(samplenum):
+        flag = random.randint(1, 3)
+        if flag == 1:
+            index = random.randint(0, pos_num-1)
+            x_new.append(x[pos_index[index]])
+            y_new.append(y[pos_index[index]])
+            pos += 1
+        elif flag == 2:
+            index = random.randint(0, neg_num-1)
+            x_new.append(x[neg_index[index]])
+            y_new.append(y[neg_index[index]])
+            neg += 1
+        else:
+            index = random.randint(0, none_num-1)
+            x_new.append(x[none_index[index]])
+            y_new.append(y[none_index[index]])
+            none += 1
+    print 'pos vs neg vs none', pos, neg, none
+
+    return x_new, y_new
 
 
 def test_process(model, test_files, embeddings_index, dim, clip_length):
@@ -298,8 +340,10 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             for i in range(len(file_info['entity'])):
                 if y_entity_predict[i] == [1]:
                     file_info['entity'][i]['predict_polarity'] = 'pos'
-                else:
+                elif y_entity_predict[i] == [2]:
                     file_info['entity'][i]['predict_polarity'] = 'neg'
+                else:
+                    file_info['entity'][i]['predict_polarity'] = 'none'
         if 'relation' in file_info:
             x_relation_test, y_relation_test = gen_relation_samples(pd.DataFrame(file_info['relation']),
                                                                     embeddings_index, dim, clip_length)
@@ -315,8 +359,10 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             for i in range(len(file_info['relation'])):
                 if y_relation_predict[i] == [1]:
                     file_info['relation'][i]['predict_polarity'] = 'pos'
-                else:
+                elif y_relation_predict[i] == [2]:
                     file_info['relation'][i]['predict_polarity'] = 'neg'
+                else:
+                    file_info['relation'][i]['predict_polarity'] = 'none'
         if 'event' in file_info:
             x_event_test, y_event_test = gen_event_samples(pd.DataFrame(file_info['event']),
                                                            pd.DataFrame(file_info['em_args']),
@@ -333,8 +379,10 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             for i in range(len(file_info['event'])):
                 if y_event_predict[i] == [1]:
                     file_info['event'][i]['predict_polarity'] = 'pos'
-                else:
+                elif y_event_predict[i] == [2]:
                     file_info['event'][i]['predict_polarity'] = 'neg'
+                else:
+                    file_info['event'][i]['predict_polarity'] = 'none'
 
     return test_files, y_test, y_predict
 
@@ -354,7 +402,7 @@ if __name__ == '__main__':
     clip_length = 40
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     x_train, y_train = get_train_samples(train_files, embeddings_index, dim, clip_length)
-    print len(y_train)
+    print 'Train data number:', len(y_train)
     # # cnn训练
     model = cnn_fit(x_train, y_train)
 
@@ -364,7 +412,19 @@ if __name__ == '__main__':
     print y_test
     print y_predict
     # 评价
-    evaluation(y_test, y_predict)
+    # 有无的评价
+    y_test_none = y_test
+    y_predict_none = y_predict
+    for i in range(len(y_test)):
+        if y_test_none[i] != [0]:
+            y_test_none[i] = [1]
+        if y_predict_none[i] != [0]:
+            y_predict_none[i] = [1]
+    evaluation(y_test_none, y_predict_none)
     # 写入
     write_best_files(test_files, output_dir)
 
+
+# 根据评测的指标，全负结果反而最好，那暂且不管了
+# 重要的是判断有无，所以下面研究none的问题：三分类，两层分类，词典过滤
+# 最后看源的问题

@@ -74,8 +74,8 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
                     #                 " " + relation_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            if label_polarity == 'none':
-                break  # 如果为none则丢弃该样本
+            # if label_polarity == 'none':
+            #     break  # 如果为none则丢弃该样本
 
             # actual source
             source = st_em[0].getElementsByTagName('source')
@@ -214,8 +214,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                     #                 " " + relation_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            if label_polarity == 'none':
-                break  # 如果为none则丢弃该样本
+            # if label_polarity == 'none':
+            #     break  # 如果为none则丢弃该样本
 
             # rel_arg是entity
             # 基本信息
@@ -429,8 +429,8 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                     #                 " " + event_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            if label_polarity == 'none':
-                break  # 如果为none则丢弃该样本
+            # if label_polarity == 'none':
+            #     break  # 如果为none则丢弃该样本
 
             # trigger
             trigger = event_mention_list[j].getElementsByTagName('trigger')
