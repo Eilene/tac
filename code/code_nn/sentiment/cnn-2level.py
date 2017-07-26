@@ -16,9 +16,7 @@ from write_best import *
 from evaluation import *
 
 import random
-
-from pattern.en import sentiment
-from pattern.en import lemma
+import copy
 
 
 def read_embedding_index(filename):
@@ -79,18 +77,20 @@ def convert_samples(features, labels, clip_length):
 def gen_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
     # 标签
     labels = []
-    str_labels = entity_info_df['label_polarity'].values  # 文件有问题,第一行列数问题，改了不知合不合理
+    str_labels = entity_info_df['label_polarity']  # 文件有问题,第一行列数问题，改了不知合不合理
     datanum = len(str_labels)
-    print 'aa', datanum, str_labels
+    # print str_labels
+    # print datanum
     # labels = [0]  * datanum
     for i in range(datanum):
+        # print str_labels[i]
         if str_labels[i] == 'pos':
             # labels[i] = 1
-            labels.append([1])
-        elif str_labels[i] == 'neg':
-            labels.append([0])
-        else:
             labels.append([2])
+        elif str_labels[i] == 'neg':
+            labels.append([1])
+        else:
+            labels.append([0])
 
     # 特征
     # 上下文词向量矩阵
@@ -113,11 +113,11 @@ def gen_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
     for i in range(datanum):
         if str_labels[i] == 'pos':
             # labels[i] = 1
-            labels.append([1])
-        elif str_labels[i] == 'neg':
-            labels.append([0])
-        else:
             labels.append([2])
+        elif str_labels[i] == 'neg':
+            labels.append([1])
+        else:
+            labels.append([0])
 
     # 特征
     # 词向量矩阵
@@ -161,11 +161,11 @@ def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, cli
     for i in range(datanum):
         if str_labels[i] == 'pos':
             # labels[i] = 1
-            labels.append([1])
-        elif str_labels[i] == 'neg':
-            labels.append([0])
-        else:
             labels.append([2])
+        elif str_labels[i] == 'neg':
+            labels.append([1])
+        else:
+            labels.append([0])
 
     # 特征
     # 词向量矩阵
@@ -185,18 +185,50 @@ def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, cli
     return features, labels
 
 
-def cnn_fit(x_train, y_train):
+def cnn_fit(train_x, train_y, mode):
+    x_t = copy.deepcopy(train_x)
+    y_t = copy.deepcopy(train_y)
+    samplenum = len(x_t)
+    if mode == 1:
+        print train_y
+        samplenum = 0
+        for i in range(len(y_t)):
+            if y_t[i] != [0]:
+                y_t[i] = [1]
+                samplenum += 1
+        samplenum *= 2
+        print train_y
+    else:
+        print train_y
+        x_train_pn = []
+        y_train_pn = []
+        for i in range(len(train_y)):
+            if train_y[i] != [0]:
+                x_train_pn.append(train_x[i])
+                y_train_pn.append([train_y[i][0]-1])
+        x_t = x_train_pn
+        y_t = y_train_pn
+        samplenum = len(y_t) * 2
+        # print y_t
+        # print len(y_t)
+
+    # 重采样
+    x_t, y_t = resampling(x_t, y_t, samplenum)  # 用于有无的好
+
+    # 转化成单通道输入方式
+    x_t, y_t = convert_samples(x_t, y_t, clip_length)
+
     # 训练集进一步划分开发集
-    input_shape = x_train.shape[1:]  # 与samples个数无关
-    split_at = len(x_train) - len(x_train) // 10  # 这是多少？
+    input_shape = x_t.shape[1:]  # 与samples个数无关
+    split_at = len(x_t) - len(x_t) // 10  # 这是多少？
     # print split_at
-    (x_train_new, x_dev) = x_train[:split_at], x_train[split_at:]
-    (y_train_new, y_dev) = y_train[:split_at], y_train[split_at:]
+    (x_train_new, x_dev) = x_t[:split_at], x_t[split_at:]
+    (y_train_new, y_dev) = y_t[:split_at], y_t[split_at:]
 
     # 转换标签格式
     y_train_new = keras.utils.to_categorical(y_train_new, 2)
     y_dev = keras.utils.to_categorical(y_dev, 2)
-    # print x_train, y_train
+    # print x_t, y_t
 
     # 开始建立CNN模型
     batch_size = 128
@@ -240,7 +272,32 @@ def cnn_predict(model, x_test, y_test):
     return y_predict
 
 
-def resampling(x, y):
+def get_train_samples(train_files, embeddings_index, dim, clip_length):
+    x_train = []
+    y_train = []
+
+    for file_info in train_files:
+        if 'entity' in file_info:
+            x_entity_train, y_entity_train = gen_entity_samples(pd.DataFrame(file_info['entity']),
+                                                                embeddings_index, dim, clip_length)
+            x_train.extend(x_entity_train)
+            y_train.extend(y_entity_train)
+        if 'relation' in file_info:
+            x_relation_train, y_relation_train = gen_relation_samples(pd.DataFrame(file_info['relation']),
+                                                                      embeddings_index, dim, clip_length)
+            x_train.extend(x_relation_train)
+            y_train.extend(y_relation_train)
+        if 'event' in file_info:
+            x_event_train, y_event_train = gen_event_samples(pd.DataFrame(file_info['event']),
+                                                             pd.DataFrame(file_info['em_args']),
+                                                             embeddings_index, dim, clip_length)
+            x_train.extend(x_event_train)
+            y_train.extend(y_event_train)
+
+    return x_train, y_train
+
+
+def resampling(x, y, samplenum):
     x_new = []
     y_new = []
 
@@ -259,7 +316,6 @@ def resampling(x, y):
     neg = 0
     pos_num = len(pos_index)
     neg_num = len(neg_index)
-    samplenum = int(datanum * 2)
     for i in range(samplenum):
         flag = random.randint(1, 2)
         if flag == 1:
@@ -272,77 +328,12 @@ def resampling(x, y):
             x_new.append(x[neg_index[index]])
             y_new.append(y[neg_index[index]])
             neg += 1
-    print 'pos vs neg', pos, neg
+    print 'st vs none (pos vs neg): ', pos, neg
 
     return x_new, y_new
 
 
-def scoring(text):  # 应是有情感词的就分高，不能正负相抵；意在过滤
-    score = 0
-    sencs = nltk.sent_tokenize(str(text).decode('utf-8'))
-    lemm = WordNetLemmatizer()
-    words = []
-    for senc in sencs:
-        words.extend(nltk.word_tokenize(senc))
-    for word in words:
-        lemmed = lemm.lemmatize(word)
-        polarity = sentiment(lemmed)[0]
-        if polarity < -0.5 or polarity > 0.5:
-            score += 1
-    return score
-
-
-def context_scoring(contexts):
-    scores = []
-    for text in contexts:
-        scores.append(scoring(text))
-    return scores
-
-
-def predict_by_scores(scores):
-    pred = [[0] if score < 1 else [1] for score in scores]
-    return pred
-
-
-def get_train_samples(train_files, embeddings_index, dim, clip_length):
-    x_train = []
-    y_train = []
-
-    for file_info in train_files:
-        if 'entity' in file_info:
-            entity_df = pd.DataFrame(file_info['entity'])
-            entity_df = entity_df[entity_df.label_polarity != 'none'].reset_index()  # none的去掉
-            if len(entity_df) != 0:
-                print 'd', len(entity_df)
-                x_entity_train, y_entity_train = gen_entity_samples(entity_df, embeddings_index, dim, clip_length)
-                x_train.extend(x_entity_train)
-                y_train.extend(y_entity_train)
-        if 'relation' in file_info:
-            relation_df = pd.DataFrame(file_info['relation'])
-            relation_df = relation_df[relation_df.label_polarity != 'none'].reset_index()
-            if len(relation_df) != 0:
-                x_relation_train, y_relation_train = gen_relation_samples(relation_df, embeddings_index, dim, clip_length)
-                x_train.extend(x_relation_train)
-                y_train.extend(y_relation_train)
-        if 'event' in file_info:
-            event_df = pd.DataFrame(file_info['event'])
-            event_df = event_df[event_df.label_polarity != 'none'].reset_index()
-            if len(event_df) != 0:
-                x_event_train, y_event_train = gen_event_samples(event_df, pd.DataFrame(file_info['em_args']),
-                                                                 embeddings_index, dim, clip_length)
-                x_train.extend(x_event_train)
-                y_train.extend(y_event_train)
-
-    # 重采样
-    # x_train, y_train = resampling(x_train, y_train)  # 效果不好，因为评测指标是有无算F，不管正负，正负只要对的多就好
-
-    # 转化成单通道输入方式
-    x_train, y_train = convert_samples(x_train, y_train, clip_length)
-
-    return x_train, y_train
-
-
-def test_process(model, test_files, embeddings_index, dim, clip_length):
+def test_process(model1, model2, test_files, embeddings_index, dim, clip_length):
     y_test = []
     y_predict = []
 
@@ -352,19 +343,13 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
                                                               embeddings_index, dim, clip_length)
             y_test.extend(y_entity_test)
             x_entity_test, y_entity_test = convert_samples(x_entity_test, y_entity_test, clip_length)
-
-            # 先用词典过滤none，再正负分类
-            entity_df = pd.DataFrame(file_info['entity'])
-            contexts = entity_df['entity_mention_context']
-            scores = context_scoring(contexts)
-            print 'entity', scores
-            y_entity_predict1 = predict_by_scores(scores)  # 过滤none
-            y_entity_predict2 = cnn_predict(model, x_entity_test, y_entity_test)
+            # 两层模型
+            y_entity_predict1 = cnn_predict(model1, x_entity_test, y_entity_test)
+            y_entity_predict2 = cnn_predict(model2, x_entity_test, y_entity_test)
             y_entity_predict2 = [[x[0]+1] for x in y_entity_predict2]  # 全加1
-            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != [0] else y_entity_predict1[i] for i in
+            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != 0 else y_entity_predict1[i] for i in 
                                 range(len(y_entity_predict1))]
             print file_info['filename'], y_entity_predict
-
             y_predict.extend(y_entity_predict)
             for i in range(len(file_info['entity'])):
                 if y_entity_predict[i] == [2]:
@@ -373,30 +358,18 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
                     file_info['entity'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['entity'][i]['predict_polarity'] = 'none'
-                    
         if 'relation' in file_info:
             x_relation_test, y_relation_test = gen_relation_samples(pd.DataFrame(file_info['relation']),
                                                                     embeddings_index, dim, clip_length)
             y_test.extend(y_relation_test)
             x_relation_test, y_relation_test = convert_samples(x_relation_test, y_relation_test, clip_length)
-            
-            # 先用词典过滤none，再正负分类
-            relation_df = pd.DataFrame(file_info['relation'])
-            rel_arg1_contexts = relation_df['rel_arg1_context']
-            rel_arg2_contexts = relation_df['rel_arg2_context']
-            contexts = []
-            for i in range(len(rel_arg1_contexts)):
-                context = rel_arg1_contexts[i] + ' ' + rel_arg2_contexts[i]
-                contexts.append(context)
-            scores = context_scoring(contexts)
-            print 'relation', scores
-            y_relation_predict1 = predict_by_scores(scores)  # 过滤none
-            y_relation_predict2 = cnn_predict(model, x_relation_test, y_relation_test)
+            # 两层模型
+            y_relation_predict1 = cnn_predict(model1, x_relation_test, y_relation_test)
+            y_relation_predict2 = cnn_predict(model2, x_relation_test, y_relation_test)
             y_relation_predict2 = [[x[0]+1] for x in y_relation_predict2]  # 全加1
-            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != [0] else y_relation_predict1[i] for i in
+            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != 0 else y_relation_predict1[i] for i in 
                                 range(len(y_relation_predict1))]
             y_predict.extend(y_relation_predict)
-            
             for i in range(len(file_info['relation'])):
                 if y_relation_predict[i] == [2]:
                     file_info['relation'][i]['predict_polarity'] = 'pos'
@@ -404,7 +377,6 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
                     file_info['relation'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['relation'][i]['predict_polarity'] = 'none'
-
         if 'event' in file_info:
             x_event_test, y_event_test = gen_event_samples(pd.DataFrame(file_info['event']),
                                                            pd.DataFrame(file_info['em_args']),
@@ -412,14 +384,10 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             y_test.extend(y_event_test)
             x_event_test, y_event_test = convert_samples(x_event_test, y_event_test, clip_length)
             # 两层模型
-            event_df = pd.DataFrame(file_info['event'])
-            contexts = event_df['trigger_context']
-            scores = context_scoring(contexts)
-            print 'event', scores
-            y_event_predict1 = predict_by_scores(scores)
-            y_event_predict2 = cnn_predict(model, x_event_test, y_event_test)
+            y_event_predict1 = cnn_predict(model1, x_event_test, y_event_test)
+            y_event_predict2 = cnn_predict(model2, x_event_test, y_event_test)
             y_event_predict2 = [[x[0]+1] for x in y_event_predict2]  # 全加1
-            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != [0] else y_event_predict1[i] for i in
+            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != 0 else y_event_predict1[i] for i in 
                                 range(len(y_event_predict1))]
             y_predict.extend(y_event_predict)
             for i in range(len(file_info['event'])):
@@ -451,11 +419,12 @@ if __name__ == '__main__':
     x_train, y_train = get_train_samples(train_files, embeddings_index, dim, clip_length)
     print 'Train data number:', len(y_train)
     # cnn训练
-    model = cnn_fit(x_train, y_train)  # 分正负
+    model1 = cnn_fit(x_train, y_train, 1)  # 分有无
+    model2 = cnn_fit(x_train, y_train, 2)  # 分正负
 
     # 测试部分
     # 提取特征
-    test_files, y_test, y_predict = test_process(model, test_files, embeddings_index, dim, clip_length)
+    test_files, y_test, y_predict = test_process(model1, model2, test_files, embeddings_index, dim, clip_length)
     # 有无的评价
     y_test_none = y_test
     y_predict_none = y_predict
@@ -464,11 +433,8 @@ if __name__ == '__main__':
             y_test_none[i] = [1]
         if y_predict_none[i] != [0]:
             y_predict_none[i] = [1]
-    evaluation(y_test_none, y_predict_none)  # 这里1为none了
+    evaluation(y_test_none, y_predict_none)
 
     # 写入
     write_best_files(test_files, output_dir)
 
-
-# 重要的是判断有无，所以下面研究none的问题：三分类，两层分类，词典过滤，目前词典过滤效果最好
-# 最后看源的问题
