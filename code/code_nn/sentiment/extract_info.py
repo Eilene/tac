@@ -1,23 +1,21 @@
 # coding=utf-8
 
 import os
+import shutil
 import pandas as pd
 import xml.dom.minidom
-import operator
 
 from constants import *
 from split_sentences import *
-from find_source import *
 
 import logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger()
+# logging.basicConfig(level=logging.DEBUG)
+# logger = logging.getLogger()
 
 
-def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath, part_name):
+def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
     entity_records_each_file = []
-    predict_sources = []  # 自己预测的源
-    
+
     source_fp = open(source_filepath)
     all_source_text = source_fp.read().decode("utf-8")  # 注意编码
     sentences = split_sentences(all_source_text)  # 分句
@@ -54,12 +52,8 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
             below = 3
             context_dict = find_context(entity_mention_offset, sentences, text_text, above, below)
             # print context_dict
-            if context_dict is None:  # 说明是在标签中出现的源
-                entity_mention = {
-                    'ere_id': entity_mention_id, 'offset': entity_mention_offset,
-                    'length': entity_mention_length, 'text': text_text
-                }
-                predict_sources.append(entity_mention)
+            if context_dict is None:  # 说明应该是在标签中出现的源（但是好像有遗漏）
+                # print part_name, entity_mention_id, text_text
                 continue
             # 拼成一个字符串
             context = context_dict_to_string(context_dict, above, below)
@@ -74,8 +68,8 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
                     #                 " " + relation_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            # if label_polarity == 'none':
-            #     break  # 如果为none则丢弃该样本
+            if with_none is False and label_polarity == 'none':
+                break  # 如果为none则丢弃该样本
 
             # actual source
             source = st_em[0].getElementsByTagName('source')
@@ -105,23 +99,7 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
 
             entity_records_each_file.append(entity_record)
 
-    predict_sources = sorted(predict_sources, key=operator.itemgetter('offset'))  # 按offset升序排序
-    for i in range(len(entity_records_each_file)):
-        offset = entity_records_each_file[i]['entity_mention_offset']
-        predict_source = find_source(offset, predict_sources)
-        # print predict_source
-        if predict_source is not None:
-            entity_records_each_file[i]['predict_source_id'] = predict_source['ere_id']
-            entity_records_each_file[i]['predict_source_offset'] = predict_source['offset']
-            entity_records_each_file[i]['predict_source_length'] = predict_source['length']
-            entity_records_each_file[i]['predict_source_text'] = predict_source['text']
-        else:
-            entity_records_each_file[i]['predict_source_id'] = ''
-            entity_records_each_file[i]['predict_source_offset'] = 0
-            entity_records_each_file[i]['predict_source_length'] = 0
-            entity_records_each_file[i]['predict_source_text'] = ''
-
-    return entity_records_each_file, predict_sources
+    return entity_records_each_file
 
 
 # rel_arg的所属entity信息
@@ -173,7 +151,7 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
             return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context
 
 
-def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, predict_sources):
+def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
     relation_records_each_file = []
 
     source_fp = open(source_filepath)
@@ -214,8 +192,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                     #                 " " + relation_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            # if label_polarity == 'none':
-            #     break  # 如果为none则丢弃该样本
+            if with_none == False and label_polarity == 'none':
+                break  # 如果为none则丢弃该样本
 
             # rel_arg是entity
             # 基本信息
@@ -289,21 +267,6 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 source_length = int(source.getAttribute('length'))
                 source_text = source.firstChild.data
 
-            # predict source
-            offset = rel_arg1_mention_offset
-            predict_source = find_source(offset, predict_sources)
-            # print predict_source
-            if predict_source is not None:
-                predict_source_id = predict_source['ere_id']
-                predict_source_offset = predict_source['offset']
-                predict_source_length = predict_source['length']
-                predict_source_text = predict_source['text']
-            else:
-                predict_source_id = ''
-                predict_source_offset = 0
-                predict_source_length = 0
-                predict_source_text = ''
-
             relation_record = {
                 'file': part_name,
                 'relation_id': relation_id, 'relation_type': relation_type, 'relation_subtype': relation_subtype,
@@ -327,9 +290,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'trigger_context': trigger_context,
                 'label_polarity': label_polarity,
                 'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
-                'source_text': source_text,
-                'predict_source_id': predict_source_id, 'predict_source_offset': predict_source_offset,
-                'predict_source_length': predict_source_length, 'predict_source_text': predict_source_text
+                'source_text': source_text
             }
 
             relation_records_each_file.append(relation_record)
@@ -386,7 +347,7 @@ def em_arg_filler_info(filler_list, em_arg_id, em_arg_text, sentences):
             return em_arg_filler_type, em_arg_mention_offset, em_arg_mention_length, em_arg_context
 
 
-def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, predict_sources):
+def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
     event_records_each_file = []
     em_args_each_file = []
 
@@ -429,8 +390,8 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                     #                 " " + event_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            # if label_polarity == 'none':
-            #     break  # 如果为none则丢弃该样本
+            if with_none == False and label_polarity == 'none':
+                break  # 如果为none则丢弃该样本
 
             # trigger
             trigger = event_mention_list[j].getElementsByTagName('trigger')
@@ -498,21 +459,6 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 source_length = int(source.getAttribute('length'))
                 source_text = source.firstChild.data
 
-            # predict source
-            offset = trigger_offset
-            predict_source = find_source(offset, predict_sources)
-            # print predict_source
-            if predict_source is not None:
-                predict_source_id = predict_source['ere_id']
-                predict_source_offset = predict_source['offset']
-                predict_source_length = predict_source['length']
-                predict_source_text = predict_source['text']
-            else:
-                predict_source_id = ''
-                predict_source_offset = 0
-                predict_source_length = 0
-                predict_source_text = ''
-
             event_record = {
                 'file': part_name, 'hopper_id': hopper_id, 'event_mention_id': event_mention_id,
                 'event_mention_type': event_mention_type, 'event_mention_subtype': event_mention_subtype,
@@ -522,9 +468,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 'em_arg_num': em_arg_num,
                 'label_polarity': label_polarity,
                 'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
-                'source_text': source_text,
-                'predict_source_id': predict_source_id, 'predict_source_offset': predict_source_offset,
-                'predict_source_length': predict_source_length, 'predict_source_text': predict_source_text
+                'source_text': source_text
             }
 
             event_records_each_file.append(event_record)
@@ -535,34 +479,52 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
 def write_to_csv(records, filename):
     df = pd.DataFrame(records)
     # logger.debug('记录条数：%d', len(records))
-    logger.debug('记录维数：(%d, %d)', df.shape[0], df.shape[1])
+    # logger.debug('记录维数：(%d, %d)', df.shape[0], df.shape[1])
     df.to_csv(filename, encoding="utf-8", index=None)
 
 
 def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
-                                 entity_info_dir, relation_info_dir, event_info_dir, em_args_dir):
-    ere_suffix = ".rich.ere.xml"
+                                 entity_info_dir, relation_info_dir, event_info_dir, em_args_dir, with_none):
+    # 创建中间数据文件夹，若已有，删除重建
+    if os.path.exists(entity_info_dir):
+        shutil.rmtree(entity_info_dir)
+    if os.path.exists(relation_info_dir):
+        shutil.rmtree(relation_info_dir)
+    if os.path.exists(event_info_dir):
+        shutil.rmtree(event_info_dir)
+    if os.path.exists(em_args_dir):
+        shutil.rmtree(em_args_dir)
+    os.makedirs(entity_info_dir)
+    os.makedirs(relation_info_dir)
+    os.makedirs(event_info_dir)
+    os.makedirs(em_args_dir)
+
+    # 遍历源数据集文件夹，生成中间数据文件
+    ere_suffix = ".rich_ere.xml"
     ere_suffix_length = len(ere_suffix)
     for parent, dirnames, ere_filenames in os.walk(ere_dir):
         for ere_filename in ere_filenames:  # 输出文件信息
             part_name = ere_filename[:-ere_suffix_length]
             source_filepath = source_dir + part_name + ".cmp.txt"
-            if os.path.exists(source_filepath) is False: # 不存在，则可能是新闻，xml，先跳过，后续考虑处理
+            if os.path.exists(source_filepath) is False:  # 不存在，则可能是新闻，xml，先跳过，后续考虑处理
                 # source_filepath = source_dir + part_name + ".xml"
                 continue
             ere_filepath = ere_dir + ere_filename
             annotation_filepath = annotation_dir + part_name + ".best.xml"
             # 跳过xml，全部188个文件
             # entity
-            entity_records, predict_sources = extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath, part_name)
+            entity_records = extract_entity_each_file(source_filepath, ere_filepath,
+                                                      annotation_filepath, part_name, with_none)
             if len(entity_records) != 0:  # 133个文件有非none样本，全部有样本
                 write_to_csv(entity_records, entity_info_dir + part_name + '.csv')
             # relation
-            relation_records = extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, predict_sources)
+            relation_records = extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath,
+                                                          part_name, with_none)
             if len(relation_records) != 0:  # 83个文件有非none样本，185个有样本
                 write_to_csv(relation_records, relation_info_dir + part_name + '.csv')
             # event
-            event_records, em_args = extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, predict_sources)
+            event_records, em_args = extract_event_each_file(source_filepath, ere_filepath, annotation_filepath,
+                                                             part_name, with_none)
             if len(event_records) != 0:  # 112个文件有非none样本，全部有样本
                 write_to_csv(event_records, event_info_dir + part_name + '.csv')
                 if len(em_args) != 0:  # 实际情况一般都有
@@ -570,5 +532,5 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
 
 if __name__ == '__main__':
     traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir, entity_info_dir,
-                                 relation_info_dir, event_info_dir, em_args_dir)
+                                 relation_info_dir, event_info_dir, em_args_dir, True)
 

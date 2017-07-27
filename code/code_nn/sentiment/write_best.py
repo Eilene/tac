@@ -1,7 +1,8 @@
 # coding=utf-8
 
 import xml.dom.minidom
-import numpy as np
+import os
+import shutil
 
 
 # 输出best.xml
@@ -21,7 +22,7 @@ def write_best_file(file_info, no, output_dir):
             entity = doc.createElement('entity')
             entity.setAttribute('ere_id', str(file_info['entity'][i]['entity_mention_id']))
             entity.setAttribute('offset', str(file_info['entity'][i]['entity_mention_offset']))
-            entity.setAttribute('length', str(len(file_info['entity'][i]['entity_mention_text'])))
+            entity.setAttribute('length', str(file_info['entity'][i]['entity_mention_length']))
             entities.appendChild(entity)
 
             text = doc.createElement('text')
@@ -39,11 +40,11 @@ def write_best_file(file_info, no, output_dir):
 
             if file_info['entity'][i]['predict_polarity'] != 'none':
                 source = doc.createElement('source')
-                if file_info['entity'][i]['source_id'] is not np.nan:
-                    source.setAttribute('ere_id', str(file_info['entity'][i]['source_id']))
-                    source.setAttribute('offset', str(file_info['entity'][i]['source_offset']))
-                    source.setAttribute('length', str(file_info['entity'][i]['source_length']))
-                    source_text = doc.createTextNode(str(file_info['entity'][i]['source_text']))
+                if 'predict_source_id' in file_info['entity'][i]:  # 即非空
+                    source.setAttribute('ere_id', str(file_info['entity'][i]['predict_source_id']))
+                    source.setAttribute('offset', str(file_info['entity'][i]['predict_source_offset']))
+                    source.setAttribute('length', str(file_info['entity'][i]['predict_source_length']))
+                    source_text = doc.createTextNode(file_info['entity'][i]['predict_source_text'])
                     source.appendChild(source_text)
 
                 sentiment.appendChild(source)
@@ -74,11 +75,11 @@ def write_best_file(file_info, no, output_dir):
 
             if file_info['relation'][i]['predict_polarity'] != 'none':
                 rsource = doc.createElement('source')
-                if file_info['relation'][i]['source_id'] is not np.nan:
-                    rsource.setAttribute('ere_id', str(file_info['relation'][i]['source_id']))
-                    rsource.setAttribute('offset', str(file_info['relation'][i]['source_offset']))
-                    rsource.setAttribute('length', str(file_info['relation'][i]['source_length']))
-                    rsource_text = doc.createTextNode(str(file_info['relation'][i]['source_text']))
+                if 'predict_source_id' in file_info['relation'][i]:  # 即非空
+                    rsource.setAttribute('ere_id', str(file_info['relation'][i]['predict_source_id']))
+                    rsource.setAttribute('offset', str(file_info['relation'][i]['predict_source_offset']))
+                    rsource.setAttribute('length', str(file_info['relation'][i]['predict_source_length']))
+                    rsource_text = doc.createTextNode(file_info['relation'][i]['predict_source_text'])
                     rsource.appendChild(rsource_text)
                 rsentiment.appendChild(rsource)
 
@@ -108,11 +109,11 @@ def write_best_file(file_info, no, output_dir):
 
             if file_info['event'][i]['predict_polarity'] != 'none':
                 esource = doc.createElement('source')
-                if file_info['event'][i]['source_id'] is not np.nan:
-                    esource.setAttribute('ere_id', str(file_info['event'][i]['source_id']))
-                    esource.setAttribute('offset', str(file_info['event'][i]['source_offset']))
-                    esource.setAttribute('length', str(file_info['event'][i]['source_length']))
-                    esource_text = doc.createTextNode(str(file_info['event'][i]['source_text']))
+                if 'predict_source_id' in file_info['event'][i]:  # 即非空
+                    esource.setAttribute('ere_id', str(file_info['event'][i]['predict_source_id']))
+                    esource.setAttribute('offset', str(file_info['event'][i]['predict_source_offset']))
+                    esource.setAttribute('length', str(file_info['event'][i]['predict_source_length']))
+                    esource_text = doc.createTextNode(file_info['event'][i]['predict_source_text'])
                     esource.appendChild(esource_text)
                 esentiment.appendChild(esource)
 
@@ -123,5 +124,8 @@ def write_best_file(file_info, no, output_dir):
 
 
 def write_best_files(results, output_dir):
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
     for i in range(len(results)):
         write_best_file(results[i], i, output_dir)
