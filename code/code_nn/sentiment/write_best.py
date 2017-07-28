@@ -3,6 +3,7 @@
 import xml.dom.minidom
 import os
 import shutil
+import numpy as np
 
 
 # 输出best.xml
@@ -58,12 +59,13 @@ def write_best_file(file_info, no, output_dir):
             relation.setAttribute('ere_id', str(file_info['relation'][i]['relation_mention_id']))
             relations.appendChild(relation)
 
-            trigger = doc.createElement('trigger')
-            trigger_text = doc.createTextNode(str(file_info['relation'][i]['trigger_text']))
-            relation.setAttribute('offset', str(file_info['relation'][i]['trigger_offset']))
-            relation.setAttribute('length', str(file_info['relation'][i]['trigger_length']))
-            trigger.appendChild(trigger_text)
-            relation.appendChild(trigger)
+            if int(file_info['relation'][i]['trigger_length']) != 0:
+                trigger = doc.createElement('trigger')
+                trigger_text = doc.createTextNode(str(file_info['relation'][i]['trigger_text']))
+                trigger.setAttribute('offset', str(int(file_info['relation'][i]['trigger_offset'])))
+                trigger.setAttribute('length', str(int(file_info['relation'][i]['trigger_length'])))
+                trigger.appendChild(trigger_text)
+                relation.appendChild(trigger)
 
             rsentiments = doc.createElement('sentiments')
             relation.appendChild(rsentiments)

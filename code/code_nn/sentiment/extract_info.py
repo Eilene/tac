@@ -13,6 +13,37 @@ import logging
 # logger = logging.getLogger()
 
 
+def get_window_text(window_length, sentence, sen_offset, target_text, target_offset):
+    window_text = ''
+    offset_in_sentence = target_offset - sen_offset
+    target_words = nltk.word_tokenize(target_text)
+    # 共window_length，从target两端延，若target长，直接截target，从头截
+    target_len = len(target_words)
+    if target_len >= window_length:
+        for k in range(window_length):
+            window_text += target_words[k]
+    else:
+        # 分词，得到词和在句中偏移量
+        words = word_segmentation(sentence)
+        index = 0
+        for k in range(len(words)):
+            if offset_in_sentence == words[k]['offset']:
+                index = k
+                # m = k
+                # for tw in target_words:  # 试下等不等，若无意外可去掉
+                #     m += 1
+                #     if m > len(words) or tw != words[m]['text']:
+                #         print 'error:', tw, words[m]['text']
+                #         return window_text
+        # 需截的左右界
+        remained_length = target_len - window_length
+        left = max(0, index - int(remained_length / 2))
+        right = min(len(words), left + window_length)
+        for k in range(left, right):
+            window_text += words[k]['text'] + ' '
+        return window_text
+
+
 def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
     entity_records_each_file = []
 
@@ -47,6 +78,7 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
             text = entity_mention_list[j].getElementsByTagName('mention_text')
             text = text[0]
             text_text = text.firstChild.data
+
             # 上下文信息
             above = 3
             below = 3
@@ -57,6 +89,12 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
                 continue
             # 拼成一个字符串
             context = context_dict_to_string(context_dict, above, below)
+
+            # 从上下文中进一步提取窗口词
+            window_length = 10
+            sen = context_dict[0]['text']
+            sen_offset = context_dict[0]['offset']
+            window_text = get_window_text(window_length, sen, sen_offset, text_text, entity_mention_offset)
 
             # polarity
             for k in range((len(annotation_entity_list))):
@@ -91,7 +129,7 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
                 'entity_id': entity_id, 'entity_type': entity_type, 'entity_specificity': entity_specificity,
                 'entity_mention_id': entity_mention_id, 'entity_mention_noun_type': entity_mention_noun_type,
                 'entity_mention_offset': entity_mention_offset, 'entity_mention_length': entity_mention_length,
-                'entity_mention_text': text_text, 'entity_mention_context': context,
+                'entity_mention_text': text_text, 'entity_mention_context': context, 'window_text': window_text,
                 'file': part_name, 'label_polarity': label_polarity,
                 'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
                 'source_text': source_text
@@ -126,8 +164,13 @@ def rel_arg_entity_info(entity_list, rel_arg_id, rel_arg_mention_id, rel_arg_tex
                     rel_arg_context = context_dict_to_string(rel_arg_context_dict, above, below)
                     # if rel_arg_context == '':
                     #     print rel_arg_text, rel_arg_id, part_name, rel_arg_context
+                    # 从上下文中进一步提取窗口词
+                    window_length = 10
+                    sen = rel_arg_context_dict[0]['text']
+                    sen_offset = rel_arg_context_dict[0]['offset']
+                    window_text = get_window_text(window_length, sen, sen_offset, rel_arg_text, rel_arg_mention_offset)
                     return rel_arg_entity_type, rel_arg_entity_specificity, rel_arg_mention_noun_type, \
-                           rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context
+                           rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text
 
 
 # rel_arg的所属filler信息
@@ -148,7 +191,15 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
             rel_arg_context = context_dict_to_string(rel_arg_context_dict, above, below)
             # if rel_arg_context == '':
             #     print rel_arg_text, rel_arg_id, part_name, rel_arg_context
-            return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context
+            # 从上下文中进一步提取窗口词
+            if rel_arg_context_dict is not None:
+                window_length = 10
+                sen = rel_arg_context_dict[0]['text']
+                sen_offset = rel_arg_context_dict[0]['offset']
+                window_text = get_window_text(window_length, sen, sen_offset, rel_arg_text, rel_arg_mention_offset)
+            else:
+                window_text = ''
+            return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text
 
 
 def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
@@ -205,7 +256,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
             rel_arg1_text = rel_arg1.firstChild.data
             # 所属entity及entity mention信息
             rel_arg1_entity_type, rel_arg1_entity_specificity, rel_arg1_mention_noun_type, rel_arg1_mention_offset, \
-            rel_arg1_mention_length, rel_arg1_context = rel_arg_entity_info(entity_list, rel_arg1_id,
+            rel_arg1_mention_length, rel_arg1_context, rel_arg1_window_text = rel_arg_entity_info(entity_list, rel_arg1_id,
                                                                             rel_arg1_mention_id, rel_arg1_text,
                                                                             sentences)
 
@@ -219,7 +270,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_mention_id = rel_arg2.getAttribute('entity_mention_id')
                 # 所属entity及entity mention信息
                 rel_arg2_entity_type, rel_arg2_entity_specificity, rel_arg2_mention_noun_type, rel_arg2_mention_offset, \
-                rel_arg2_mention_length, rel_arg2_context = rel_arg_entity_info(entity_list, rel_arg2_id,
+                rel_arg2_mention_length, rel_arg2_context, rel_arg2_window_text = rel_arg_entity_info(entity_list, rel_arg2_id,
                                                                             rel_arg2_mention_id, rel_arg2_text,
                                                                             sentences)
                 rel_arg2_is_filler = 0
@@ -228,7 +279,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_id = rel_arg2.getAttribute('filler_id')
                 # if rel_arg2_id == '':
                 #     logger.info("错误：参数不是entity或filler。" + " " + part_name + " " + relation_mention_id)
-                rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context = \
+                rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context, rel_arg2_window_text = \
                     rel_arg_filler_info(filler_list, rel_arg2_id, rel_arg2_text, sentences)
                 rel_arg2_mention_id = ''
                 rel_arg2_entity_specificity = ''
@@ -237,8 +288,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
             # trigger
             trigger = relation_mention_list[j].getElementsByTagName('trigger')  # ？待查
             if len(trigger) == 0:
-                trigger_offset = ''
-                trigger_length = ""
+                trigger_offset = 0
+                trigger_length = 0
                 trigger_text = ""
                 trigger_context = ""
             else:
@@ -278,6 +329,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg1_mention_noun_type': rel_arg1_mention_noun_type,
                 'rel_arg1_mention_offset': rel_arg1_mention_offset,
                 'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context': rel_arg1_context,
+                'rel_arg1_window_text': rel_arg2_window_text,
                 'rel_arg2_id': rel_arg2_id, 'rel_arg2_mention_id': rel_arg2_mention_id,
                 'rel_arg2_role': rel_arg2_role, 'rel_arg2_text': rel_arg2_text,
                 'rel_arg2_entity_type': rel_arg2_entity_type,
@@ -285,7 +337,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg2_mention_noun_type': rel_arg2_mention_noun_type,
                 'rel_arg2_mention_offset': rel_arg2_mention_offset,
                 'rel_arg2_mention_length': rel_arg2_mention_length, 'rel_arg2_context': rel_arg2_context,
-                'rel_arg2_is_filler': rel_arg2_is_filler,
+                'rel_arg2_is_filler': rel_arg2_is_filler, 'rel_arg2_window_text': rel_arg2_window_text,
                 'trigger_offset': trigger_offset, 'trigger_length': trigger_length, 'trigger_text': trigger_text,
                 'trigger_context': trigger_context,
                 'label_polarity': label_polarity,
@@ -405,6 +457,11 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
             trigger_context_dict = find_context(trigger_offset, sentences, trigger_text, above, below)
             # 拼成一个字符串
             trigger_context = context_dict_to_string(trigger_context_dict, above, below)
+            # 从上下文中进一步提取窗口词
+            window_length = 10
+            sen = trigger_context_dict[0]['text']
+            sen_offset = trigger_context_dict[0]['offset']
+            window_text = get_window_text(window_length, sen, sen_offset, trigger_text, trigger_offset)
 
             # em_arg
             em_args = event_mention_list[j].getElementsByTagName('em_arg')
@@ -465,6 +522,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 'event_mention_realis': event_mention_realis, 'event_mention_ways': event_mention_ways,
                 'trigger_offset': trigger_offset, 'trigger_length': trigger_length,
                 'trigger_text': trigger_text, 'trigger_context': trigger_context,
+                'trigger_window_text': window_text,
                 'em_arg_num': em_arg_num,
                 'label_polarity': label_polarity,
                 'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,

@@ -7,6 +7,28 @@ import re
 import sys
 
 
+# 分词
+# 参数：一个句子，返回值：词及每个词在句中的偏移量
+def word_segmentation(sentence):
+    # 分词
+    words = nltk.WordPunctTokenizer().tokenize(sentence)
+    # 去标点
+    english_punctuations = [',', '.', ':', ';', '?', '(', ')', '[', ']', '&', '!', '*', '@', '#', '$', '%', '"', "'"]
+    word_filtered = [word for word in words if not word in english_punctuations]
+    # 查找偏移量
+    words_offset = []  # key：偏移量；value：词
+    start = 0
+    for word in word_filtered:
+        index = sentence.find(word, start)
+        if index == -1:
+            print "error: cannot find word in sentence"
+            sys.exit()
+        start = index + len(word)
+        word_offset = {'offset': index, 'text': word}
+        words_offset.append(word_offset)
+    return words_offset
+
+
 # 分句
 # 参数：source文件全部文本，返回值：句子及每句起始偏移量
 def split_sentences(whole_text):

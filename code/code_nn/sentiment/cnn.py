@@ -62,7 +62,8 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
 def convert_samples(features, labels, clip_length):
     labels = np.array(labels)
     print 'Label shape: ', labels.shape
-    data = np.empty((labels.shape[0], clip_length, 100, 1), dtype='float32')
+    window_length = 16
+    data = np.empty((labels.shape[0], clip_length + window_length, 100, 1), dtype='float32')
     # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
     count = 0
     for feature in features:
@@ -91,9 +92,16 @@ def gen_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
     # 上下文词向量矩阵
     features = []
     contexts = entity_info_df['entity_mention_context']
+    targets = entity_info_df['entity_mention_text']
+    windows = entity_info_df['window_text']
+    # window_length = 10
     # print len(contexts)
     for i in range(len(contexts)):
         embeddings_matrix = gen_embeddings_matrix(contexts[i], clip_length, embeddings_index, dim)
+        target_matrix = gen_embeddings_matrix(targets[i], 10, embeddings_index, dim)
+        embeddings_matrix.extend(target_matrix)
+        window_matrix = gen_embeddings_matrix(windows[i], 6, embeddings_index, dim)
+        embeddings_matrix.extend(window_matrix)
         features.append(embeddings_matrix)
 
     return features, labels
@@ -119,19 +127,44 @@ def gen_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
     rel_arg1_contexts = relation_info_df['rel_arg1_context']
     rel_arg2_contexts = relation_info_df['rel_arg2_context']
     trigger_contexts = relation_info_df['trigger_context']
+    trigger_offsets = relation_info_df['trigger_offset']
+    rel_arg1_texts = relation_info_df['rel_arg1_text']
+    rel_arg2_texts = relation_info_df['rel_arg2_text']
+    trigger_texts = relation_info_df['trigger_text']
+    rel_arg1_windows = relation_info_df['rel_arg1_window_text']
+    rel_arg2_windows = relation_info_df['rel_arg1_window_text']
+    # trigger_windows = relation_info_df['trigger_window_text']
+    # window_length = 6
     for i in range(len(rel_arg1_contexts)):
         # 参数1
         embeddings_matrix1 = gen_embeddings_matrix(rel_arg1_contexts[i], clip_length, embeddings_index, dim)
+        target_matrix1 = gen_embeddings_matrix(rel_arg1_texts[i], 10, embeddings_index, dim)
+        embeddings_matrix1.extend(target_matrix1)
+        window_matrix1 = gen_embeddings_matrix(rel_arg1_windows[i], 6, embeddings_index, dim)
+        embeddings_matrix1.extend(window_matrix1)
         # 参数2
         embeddings_matrix2 = gen_embeddings_matrix(rel_arg2_contexts[i], clip_length, embeddings_index, dim)
+        target_matrix2 = gen_embeddings_matrix(rel_arg2_texts[i], 10, embeddings_index, dim)
+        embeddings_matrix2.extend(target_matrix2)
+        window_matrix2 = gen_embeddings_matrix(rel_arg2_windows[i], 6, embeddings_index, dim)
+        embeddings_matrix2.extend(window_matrix2)
         # 触发词
         embeddings_matrix3 = []
-        if trigger_contexts[i] == 'None':
+        if int(trigger_offsets[i]) != 0:
             word_vector = [0.01] * dim
             for j in range(clip_length):
                 embeddings_matrix3.append(word_vector)
+            for j in range(16):
+                embeddings_matrix3.append(word_vector)
         else:
             embeddings_matrix3 = gen_embeddings_matrix(trigger_contexts[i], clip_length, embeddings_index, dim)
+            target_matrix3 = gen_embeddings_matrix(trigger_texts[i], 10, embeddings_index, dim)
+            embeddings_matrix3.extend(target_matrix3)
+            # window_matrix3 = gen_embeddings_matrix(trigger_windows[i], 6, embeddings_index, dim)
+            # embeddings_matrix3.extend(window_matrix3)
+            word_vector = [0.01] * dim
+            for j in range(6):
+                embeddings_matrix3.append(word_vector)
         # 合并
         embeddings_matrix = embeddings_matrix1
         for k in range(clip_length):
@@ -163,10 +196,16 @@ def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, cli
     # 触发词+各个参数
     features = []
     trigger_contexts = event_info_df['trigger_context']
-
+    trigger_texts = event_info_df['trigger_text']
+    trigger_windows = event_info_df['trigger_window_text']
+    # window_length = 6
     for i in range(len(trigger_contexts)):
         # 触发词
         embeddings_matrix3 = gen_embeddings_matrix(trigger_contexts[i], clip_length, embeddings_index, dim)
+        target_matrix3 = gen_embeddings_matrix(trigger_texts[i], 10, embeddings_index, dim)
+        embeddings_matrix3.extend(target_matrix3)
+        window_matrix3 = gen_embeddings_matrix(trigger_windows[i], 6, embeddings_index, dim)
+        embeddings_matrix3.extend(window_matrix3)
         # 各个参数（似乎上下文都一样，取一个即可）
         # 合并
         embeddings_matrix = embeddings_matrix3
