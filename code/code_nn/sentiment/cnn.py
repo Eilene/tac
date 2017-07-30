@@ -59,35 +59,35 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
     return embeddings_matrix
 
 
-def convert_samples(features, labels, clip_length):
-    labels = np.array(labels)
-    print 'Label shape: ', labels.shape
-    window_length = 16
-    data = np.empty((labels.shape[0], clip_length + window_length, 100, 1), dtype='float32')
-    # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
-    count = 0
-    for feature in features:
-        data[count, :, :, 0] = feature
-        count += 1
-        features = data
-
-    return features, labels
-
-
-def gen_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
-    # 标签
+def get_train_labels(str_labels):
     labels = []
-    str_labels = entity_info_df['label_polarity'].values  # 文件有问题,第一行列数问题，改了不知合不合理
     datanum = len(str_labels)
-    # print 'aa', datanum, str_labels
-    # labels = [0]  * datanum
+    # labels = [0] * datanum
     for i in range(datanum):
         if str_labels[i] == 'pos':
             # labels[i] = 1
             labels.append([1])
         else:
             labels.append([0])
+    return labels
 
+
+def get_test_labels(str_labels):
+    labels = []
+    datanum = len(str_labels)
+    # labels = [0] * datanum
+    labels = []
+    for i in range(datanum):
+        if str_labels[i] == 'pos':
+            labels.append([2])
+        elif str_labels[i] == 'neg':
+            labels.append([1])
+        else:
+            labels.append([0])
+    return labels
+
+
+def gen_entity_features(entity_info_df, embeddings_index, dim, clip_length):
     # 特征
     # 上下文词向量矩阵
     features = []
@@ -104,22 +104,10 @@ def gen_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
         embeddings_matrix.extend(window_matrix)
         features.append(embeddings_matrix)
 
-    return features, labels
+    return features
 
 
-def gen_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    labels = []
-    str_labels = relation_info_df['label_polarity']
-    datanum = len(str_labels)
-    # labels = [0] * datanum
-    for i in range(datanum):
-        if str_labels[i] == 'pos':
-            # labels[i] = 1
-            labels.append([1])
-        else:
-            labels.append([0])
-
+def gen_relation_features(relation_info_df, embeddings_index, dim, clip_length):
     # 特征
     # 词向量矩阵
     # 两个参数+触发词
@@ -175,22 +163,10 @@ def gen_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
 
         features.append(embeddings_matrix)
 
-    return features, labels
+    return features
 
 
-def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    labels = []
-    str_labels = event_info_df['label_polarity']
-    datanum = len(str_labels)
-    # labels = [0] * datanum
-    for i in range(datanum):
-        if str_labels[i] == 'pos':
-            # labels[i] = 1
-            labels.append([1])
-        else:
-            labels.append([0])
-
+def gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, clip_length):
     # 特征
     # 词向量矩阵
     # 触发词+各个参数
@@ -211,6 +187,94 @@ def gen_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, cli
         embeddings_matrix = embeddings_matrix3
 
         features.append(embeddings_matrix)
+    return features
+
+
+def convert_samples(features, labels, clip_length):
+    labels = np.array(labels)
+    print 'Label shape: ', labels.shape
+    window_length = 16
+    data = np.empty((labels.shape[0], clip_length + window_length, 100, 1), dtype='float32')
+    # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
+    count = 0
+    for feature in features:
+        data[count, :, :, 0] = feature
+        count += 1
+        features = data
+
+    return features, labels
+
+
+def gen_train_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
+    # 标签
+    str_labels = entity_info_df['label_polarity'].values
+    labels = get_train_labels(str_labels)
+
+    # 特征
+    features = gen_entity_features(entity_info_df, embeddings_index, dim, clip_length)
+
+    return features, labels
+
+
+def gen_test_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
+    # 标签
+    str_labels = entity_info_df['label_polarity'].values
+    labels = get_test_labels(str_labels)
+
+    # 特征
+    features = gen_entity_features(entity_info_df, embeddings_index, dim, clip_length)
+
+    return features, labels
+
+
+def gen_train_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
+    # 标签
+    str_labels = relation_info_df['label_polarity'].values
+    labels = get_train_labels(str_labels)
+
+    # 特征
+    # 词向量矩阵
+    # 两个参数+触发词
+    features = gen_relation_features(relation_info_df, embeddings_index, dim, clip_length)
+
+    return features, labels
+
+
+def gen_test_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
+    # 标签
+    str_labels = relation_info_df['label_polarity'].values
+    labels = get_test_labels(str_labels)
+
+    # 特征
+    # 词向量矩阵
+    # 两个参数+触发词
+    features = gen_relation_features(relation_info_df, embeddings_index, dim, clip_length)
+
+    return features, labels
+
+
+def gen_train_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, clip_length):
+    # 标签
+    str_labels = event_info_df['label_polarity'].values
+    labels = get_train_labels(str_labels)
+
+    # 特征
+    # 词向量矩阵
+    # 触发词+各个参数
+    features = gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, clip_length)
+
+    return features, labels
+
+
+def gen_test_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, clip_length):
+    # 标签
+    str_labels = event_info_df['label_polarity'].values
+    labels = get_test_labels(str_labels)
+
+    # 特征
+    # 词向量矩阵
+    # 触发词+各个参数
+    features = gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, clip_length)
 
     return features, labels
 
@@ -261,10 +325,12 @@ def cnn_predict(model, x_test, y_test):
     y_predict = []
     # print probabilities
     for i in probabilities:
-        if (i[0] < i[1]):  # 可调阈值，过滤0
+        if i[1] - i[0] > 0.1:  # 可调阈值，过滤0
             y_predict.append([1])
-        else:
+        elif i[0] - i[1] > 0.1:
             y_predict.append([0])
+        else:
+            y_predict.append([-1])
     accuracy = np.mean(y_predict == y_test)
     print("Prediction Accuracy: %.2f%%" % (accuracy * 100))
     return y_predict
@@ -345,21 +411,21 @@ def get_train_samples(train_files, embeddings_index, dim, clip_length):
             entity_df = file_info['entity']
             entity_df = entity_df[entity_df.label_polarity != 'none'].reset_index()  # none的去掉
             if len(entity_df) != 0:
-                x_entity_train, y_entity_train = gen_entity_samples(entity_df, embeddings_index, dim, clip_length)
+                x_entity_train, y_entity_train = gen_train_entity_samples(entity_df, embeddings_index, dim, clip_length)
                 x_train.extend(x_entity_train)
                 y_train.extend(y_entity_train)
         if 'relation' in file_info:
             relation_df = file_info['relation']
             relation_df = relation_df[relation_df.label_polarity != 'none'].reset_index()
             if len(relation_df) != 0:
-                x_relation_train, y_relation_train = gen_relation_samples(relation_df, embeddings_index, dim, clip_length)
+                x_relation_train, y_relation_train = gen_train_relation_samples(relation_df, embeddings_index, dim, clip_length)
                 x_train.extend(x_relation_train)
                 y_train.extend(y_relation_train)
         if 'event' in file_info:
             event_df = file_info['event']
             event_df = event_df[event_df.label_polarity != 'none'].reset_index()
             if len(event_df) != 0:
-                x_event_train, y_event_train = gen_event_samples(event_df, pd.DataFrame(file_info['em_args']),
+                x_event_train, y_event_train = gen_train_event_samples(event_df, pd.DataFrame(file_info['em_args']),
                                                                  embeddings_index, dim, clip_length)
                 x_train.extend(x_event_train)
                 y_train.extend(y_event_train)
@@ -379,7 +445,7 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
 
     for file_info in test_files:
         if 'entity' in file_info:
-            x_entity_test, y_entity_test = gen_entity_samples(file_info['entity'],
+            x_entity_test, y_entity_test = gen_test_entity_samples(file_info['entity'],
                                                               embeddings_index, dim, clip_length)
             y_test.extend(y_entity_test)
             x_entity_test, y_entity_test = convert_samples(x_entity_test, y_entity_test, clip_length)
@@ -408,7 +474,7 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
                     file_info['entity'][i]['predict_polarity'] = 'none'
                     
         if 'relation' in file_info:
-            x_relation_test, y_relation_test = gen_relation_samples(file_info['relation'],
+            x_relation_test, y_relation_test = gen_test_relation_samples(file_info['relation'],
                                                                     embeddings_index, dim, clip_length)
             y_test.extend(y_relation_test)
             x_relation_test, y_relation_test = convert_samples(x_relation_test, y_relation_test, clip_length)
@@ -441,7 +507,7 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
                     file_info['relation'][i]['predict_polarity'] = 'none'
 
         if 'event' in file_info:
-            x_event_test, y_event_test = gen_event_samples(file_info['event'],
+            x_event_test, y_event_test = gen_test_event_samples(file_info['event'],
                                                            file_info['em_args'],
                                                            embeddings_index, dim, clip_length)
             y_test.extend(y_event_test)

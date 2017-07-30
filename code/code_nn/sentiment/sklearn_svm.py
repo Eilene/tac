@@ -17,7 +17,7 @@ from find_source import *
 # 都需要全语料中抽
 
 
-def get_labels(df):
+def get_train_labels(df):
     str_labels = df['label_polarity']
     datanum = len(str_labels)
     labels = [0] * datanum
@@ -27,14 +27,29 @@ def get_labels(df):
     return labels
 
 
+def get_test_labels(df):
+    str_labels = df['label_polarity']
+    datanum = len(str_labels)
+    # labels = [0] * datanum
+    labels = []
+    for i in range(datanum):
+        if str_labels[i] == 'pos':
+            labels.append(2)
+        elif str_labels[i] == 'neg':
+            labels.append(1)
+        else:
+            labels.append(0)
+    return labels
+
+
 def gen_train_samples(entity_df, relation_df, event_df):
     features = []
     labels = []
 
     # labels
-    entity_labels = get_labels(entity_df)
-    relation_labels = get_labels(relation_df)
-    event_labels = get_labels(event_df)
+    entity_labels = get_train_labels(entity_df)
+    relation_labels = get_train_labels(relation_df)
+    event_labels = get_train_labels(event_df)
     labels = entity_labels
     labels.extend(relation_labels)
     labels.extend(event_labels)
@@ -63,7 +78,7 @@ def gen_train_samples(entity_df, relation_df, event_df):
 
 
 def gen_test_samples(vec, contexts, df):
-    labels = get_labels(df)
+    labels = get_test_labels(df)
     features = vec.transform(contexts).toarray()
     features = features.tolist()
 
@@ -95,6 +110,19 @@ def get_train_records(train_files):  # 拼接起来
     return all_entity_df, all_relation_df, all_event_df
 
 
+def svm_predict(clf, x_test):
+    y_pred_proba = clf.predict_proba(x_test)
+    y_pred = []
+    for p in y_pred_proba:
+        if p[1] - p[0] > 0.1:
+            y_pred.append([2])
+        elif p[0] - p[1] > 0.1:
+            y_pred.append([1])
+        else:
+            y_pred.append([0])
+    return y_pred
+
+
 def test_process(vec, clf, test_files):
     y_test = []
     y_predict = []
@@ -111,8 +139,8 @@ def test_process(vec, clf, test_files):
             scores = context_scoring(contexts)
             print 'entity', scores
             y_entity_predict1 = predict_by_scores(scores)  # 过滤none
-            y_entity_predict2 = clf.predict(x_entity_test)
-            y_entity_predict2 = [[x + 1] for x in y_entity_predict2]  # 全加1
+            y_entity_predict2 = svm_predict(clf, x_entity_test)
+            # y_entity_predict2 = [[x + 1] for x in y_entity_predict2]  # 全加1
             y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != [0] else y_entity_predict1[i] for i in
                                 range(len(y_entity_predict1))]
             # print file_info['filename'], y_entity_predict
@@ -144,8 +172,8 @@ def test_process(vec, clf, test_files):
             scores = context_scoring(contexts)
             print 'relation', scores
             y_relation_predict1 = predict_by_scores(scores)  # 过滤none
-            y_relation_predict2 = clf.predict(x_relation_test)
-            y_relation_predict2 = [[x + 1] for x in y_relation_predict2]  # 全加1
+            y_relation_predict2 = svm_predict(clf, x_relation_test)
+            # y_relation_predict2 = [[x + 1] for x in y_relation_predict2]  # 全加1
             y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != [0] else y_relation_predict1[i]
                                   for i in
                                   range(len(y_relation_predict1))]
@@ -172,8 +200,8 @@ def test_process(vec, clf, test_files):
             scores = context_scoring(contexts)
             print 'event', scores
             y_event_predict1 = predict_by_scores(scores)
-            y_event_predict2 = clf.predict(x_event_test)
-            y_event_predict2 = [[x + 1] for x in y_event_predict2]  # 全加1
+            y_event_predict2 = svm_predict(clf, x_event_test)
+            # y_event_predict2 = [[x + 1] for x in y_event_predict2]  # 全加1
             y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != [0] else y_event_predict1[i] for i in
                                range(len(y_event_predict1))]
             y_predict.extend(y_event_predict)
@@ -283,7 +311,7 @@ if __name__ == '__main__':
     # 训练
     print 'Train...'
     # clf = MultinomialNB()  # 不接受负值
-    clf = svm.SVC()  # 总是全预测成负的
+    clf = svm.SVC(probability=True)  # 总是全预测成负的
     clf.fit(x_train, y_train)
     # 保存训练模型
     joblib.dump(clf, 'svm_model.m')

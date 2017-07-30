@@ -77,10 +77,10 @@ def find_source(offset, length, id, all_source_text, entity_mentions):
 
 def match(text, offset, length, id):
     if text[offset-len('<quote orig_author="'):offset] == '<quote orig_author="':
-        print id, '   entity in xml: <quote orig_author="', text[offset:offset+length]
+        # print id, '   entity in xml: <quote orig_author="', text[offset:offset+length]
         return None, None
     if text[offset-len('<post author="'):offset] == '<post author="':
-        print id, '   entity in xml: <post author="', text[offset:offset+length]
+        # print id, '   entity in xml: <post author="', text[offset:offset+length]
         return None, None
     regex_author = re.compile(r' author="(.*?)"')
     regex_orig = re.compile(r' orig_author="(.*?)"')
@@ -92,16 +92,16 @@ def match(text, offset, length, id):
                 stack = stack - 1
             else:
                 if text[index] == ">":
-                    print id, "   <quote>", text[offset:offset+length]
+                    # print id, "   <quote>", text[offset:offset+length]
                     return None, None
-                print "<quote> : ", regex_orig.search(text[index:index+100]).group()[14:-1]
+                # print "<quote> : ", regex_orig.search(text[index:index+100]).group()[14:-1]
                 return index+14, regex_orig.search(text[index:index+100]).group()[14:-1]
         # '</quote>'
         if index >= 8 and text[index-8:index] == "</quote>":
             stack = stack + 1
         # '<post'
         if text[index-5:index] == "<post":
-            print "<post> : ", regex_author.search(text[index:index+100]).group()[9:-1]
+            # print "<post> : ", regex_author.search(text[index:index+100]).group()[9:-1]
             return index+9, regex_author.search(text[index:index+100]).group()[9:-1]
         index = index - 1
 
