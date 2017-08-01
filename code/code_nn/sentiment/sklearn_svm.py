@@ -12,6 +12,8 @@ from read_file_info_records import *
 from evaluation import *
 from write_best import *
 from find_source import *
+from filter_none_with_stdict import *
+from resampling import *
 
 # tfidf, 词性、极性、主动性等分类特征
 # 都需要全语料中抽
@@ -66,7 +68,7 @@ def gen_train_samples(entity_df, relation_df, event_df):
     contexts = entity_contexts.tolist()
     contexts.extend(relation_contexts)
     contexts.extend(event_trigger_contexts.tolist())
-    print contexts
+    # print contexts
     vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='english', max_features=300, binary=True)
     tfidf_features = vec.fit_transform(contexts).toarray()
     tfidf_features = tfidf_features.tolist()
@@ -115,11 +117,11 @@ def svm_predict(clf, x_test):
     y_pred = []
     for p in y_pred_proba:
         if p[1] - p[0] > 0.1:
-            y_pred.append([2])
+            y_pred.append(2)
         elif p[0] - p[1] > 0.1:
-            y_pred.append([1])
+            y_pred.append(1)
         else:
-            y_pred.append([0])
+            y_pred.append(0)
     return y_pred
 
 
@@ -140,8 +142,7 @@ def test_process(vec, clf, test_files):
             print 'entity', scores
             y_entity_predict1 = predict_by_scores(scores)  # 过滤none
             y_entity_predict2 = svm_predict(clf, x_entity_test)
-            # y_entity_predict2 = [[x + 1] for x in y_entity_predict2]  # 全加1
-            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != [0] else y_entity_predict1[i] for i in
+            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != 0 else y_entity_predict1[i] for i in
                                 range(len(y_entity_predict1))]
             # print file_info['filename'], y_entity_predict
             y_predict.extend(y_entity_predict)
@@ -149,9 +150,9 @@ def test_process(vec, clf, test_files):
             # 加入记录
             file_info['entity'] = entity_df.to_dict(orient='records')
             for i in range(len(file_info['entity'])):
-                if y_entity_predict[i] == [2]:
+                if y_entity_predict[i] == 2:
                     file_info['entity'][i]['predict_polarity'] = 'pos'
-                elif y_entity_predict[i] == [1]:
+                elif y_entity_predict[i] == 1:
                     file_info['entity'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['entity'][i]['predict_polarity'] = 'none'
@@ -174,7 +175,7 @@ def test_process(vec, clf, test_files):
             y_relation_predict1 = predict_by_scores(scores)  # 过滤none
             y_relation_predict2 = svm_predict(clf, x_relation_test)
             # y_relation_predict2 = [[x + 1] for x in y_relation_predict2]  # 全加1
-            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != [0] else y_relation_predict1[i]
+            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != 0 else y_relation_predict1[i]
                                   for i in
                                   range(len(y_relation_predict1))]
             y_predict.extend(y_relation_predict)
@@ -182,9 +183,9 @@ def test_process(vec, clf, test_files):
             # 加入记录
             file_info['relation'] = relation_df.to_dict(orient='records')
             for i in range(len(file_info['relation'])):
-                if y_relation_predict[i] == [2]:
+                if y_relation_predict[i] == 2:
                     file_info['relation'][i]['predict_polarity'] = 'pos'
-                elif y_relation_predict[i] == [1]:
+                elif y_relation_predict[i] == 1:
                     file_info['relation'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['relation'][i]['predict_polarity'] = 'none'
@@ -202,89 +203,21 @@ def test_process(vec, clf, test_files):
             y_event_predict1 = predict_by_scores(scores)
             y_event_predict2 = svm_predict(clf, x_event_test)
             # y_event_predict2 = [[x + 1] for x in y_event_predict2]  # 全加1
-            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != [0] else y_event_predict1[i] for i in
+            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != 0 else y_event_predict1[i] for i in
                                range(len(y_event_predict1))]
             y_predict.extend(y_event_predict)
 
             # 加入记录
             file_info['event'] = event_df.to_dict(orient='records')
             for i in range(len(file_info['event'])):
-                if y_event_predict[i] == [2]:
+                if y_event_predict[i] == 2:
                     file_info['event'][i]['predict_polarity'] = 'pos'
-                elif y_event_predict[i] == [1]:
+                elif y_event_predict[i] == 1:
                     file_info['event'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['event'][i]['predict_polarity'] = 'none'
 
-    y_test = [[y] for y in y_test]
-
     return test_files, y_test, y_predict
-
-
-def resampling(x, y):
-    x_new = []
-    y_new = []
-
-    # 正负样本分开
-    pos_index = []
-    neg_index = []
-    datanum = len(y)
-    for i in range(datanum):
-        if y[i] == [1]:
-            pos_index.append(i)
-        else:
-            neg_index.append(i)
-
-    # 正负样本均衡采样，有放回采样
-    pos = 0
-    neg = 0
-    pos_num = len(pos_index)
-    neg_num = len(neg_index)
-    samplenum = int(datanum * 2)
-    for i in range(samplenum):
-        flag = random.randint(1, 2)
-        if flag == 1:
-            index = random.randint(0, pos_num-1)
-            x_new.append(x[pos_index[index]])
-            y_new.append(y[pos_index[index]])
-            pos += 1
-        else:
-            index = random.randint(0, neg_num-1)
-            x_new.append(x[neg_index[index]])
-            y_new.append(y[neg_index[index]])
-            neg += 1
-    print 'pos vs neg', pos, neg
-
-    return x_new, y_new
-
-
-# 下面几个函数阈值怎么调合适
-
-def scoring(text):  # 应是有情感词的就分高，不能正负相抵；意在过滤
-    score = 0
-    sencs = nltk.sent_tokenize(str(text).decode('utf-8'))
-    lemm = WordNetLemmatizer()
-    words = []
-    for senc in sencs:
-        words.extend(nltk.word_tokenize(senc))
-    for word in words:
-        lemmed = lemm.lemmatize(word)
-        polarity = sentiment(lemmed)[0]
-        if abs(polarity) >= 0.45:
-            score += 1
-    return score
-
-
-def context_scoring(contexts):
-    scores = []
-    for text in contexts:
-        scores.append(scoring(text))
-    return scores
-
-
-def predict_by_scores(scores):
-    pred = [[0] if score < 1 else [1] for score in scores]
-    return pred
 
 
 if __name__ == '__main__':

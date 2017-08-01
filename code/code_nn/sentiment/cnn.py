@@ -16,6 +16,8 @@ from read_file_info_records import *
 from evaluation import *
 from write_best import *
 from find_source import *
+from filter_none_with_stdict import *
+from resampling import *
 
 
 def read_embedding_index(filename):
@@ -62,28 +64,23 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
 def get_train_labels(str_labels):
     labels = []
     datanum = len(str_labels)
-    # labels = [0] * datanum
+    labels = [0] * datanum
     for i in range(datanum):
         if str_labels[i] == 'pos':
-            # labels[i] = 1
-            labels.append([1])
-        else:
-            labels.append([0])
+            labels[i] = 1
     return labels
 
 
 def get_test_labels(str_labels):
-    labels = []
     datanum = len(str_labels)
-    # labels = [0] * datanum
-    labels = []
+    labels = [0] * datanum
     for i in range(datanum):
         if str_labels[i] == 'pos':
-            labels.append([2])
+            labels[i] = 2
         elif str_labels[i] == 'neg':
-            labels.append([1])
+            labels[i] = 1
         else:
-            labels.append([0])
+            labels[i] = 0
     return labels
 
 
@@ -288,9 +285,11 @@ def cnn_fit(x_train, y_train):
     (y_train_new, y_dev) = y_train[:split_at], y_train[split_at:]
 
     # 转换标签格式
+    # print y_train_new
     y_train_new = keras.utils.to_categorical(y_train_new, 2)
     y_dev = keras.utils.to_categorical(y_dev, 2)
-    # print x_train, y_train
+    # print y_train_new
+    # print y_train_new.shape
 
     # 开始建立CNN模型
     batch_size = 128
@@ -326,80 +325,14 @@ def cnn_predict(model, x_test, y_test):
     # print probabilities
     for i in probabilities:
         if i[1] - i[0] > 0.1:  # 可调阈值，过滤0
-            y_predict.append([1])
+            y_predict.append(2)
         elif i[0] - i[1] > 0.1:
-            y_predict.append([0])
+            y_predict.append(1)
         else:
-            y_predict.append([-1])
+            y_predict.append(0)
     accuracy = np.mean(y_predict == y_test)
     print("Prediction Accuracy: %.2f%%" % (accuracy * 100))
     return y_predict
-
-
-def resampling(x, y):
-    x_new = []
-    y_new = []
-
-    # 正负样本分开
-    pos_index = []
-    neg_index = []
-    datanum = len(y)
-    for i in range(datanum):
-        if y[i] == [1]:
-            pos_index.append(i)
-        else:
-            neg_index.append(i)
-
-    # 正负样本均衡采样，有放回采样
-    pos = 0
-    neg = 0
-    pos_num = len(pos_index)
-    neg_num = len(neg_index)
-    samplenum = int(datanum * 2)
-    for i in range(samplenum):
-        flag = random.randint(1, 2)
-        if flag == 1:
-            index = random.randint(0, pos_num-1)
-            x_new.append(x[pos_index[index]])
-            y_new.append(y[pos_index[index]])
-            pos += 1
-        else:
-            index = random.randint(0, neg_num-1)
-            x_new.append(x[neg_index[index]])
-            y_new.append(y[neg_index[index]])
-            neg += 1
-    print 'pos vs neg', pos, neg
-
-    return x_new, y_new
-
-
-# 下面几个函数阈值怎么调合适
-
-def scoring(text):  # 应是有情感词的就分高，不能正负相抵；意在过滤
-    score = 0
-    sencs = nltk.sent_tokenize(str(text).decode('utf-8'))
-    lemm = WordNetLemmatizer()
-    words = []
-    for senc in sencs:
-        words.extend(nltk.word_tokenize(senc))
-    for word in words:
-        lemmed = lemm.lemmatize(word)
-        polarity = sentiment(lemmed)[0]
-        if abs(polarity) >= 0.45:
-            score += 1
-    return score
-
-
-def context_scoring(contexts):
-    scores = []
-    for text in contexts:
-        scores.append(scoring(text))
-    return scores
-
-
-def predict_by_scores(scores):
-    pred = [[0] if score < 1 else [1] for score in scores]
-    return pred
 
 
 def get_train_samples(train_files, embeddings_index, dim, clip_length):
@@ -457,8 +390,7 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             print 'entity', scores
             y_entity_predict1 = predict_by_scores(scores)  # 过滤none
             y_entity_predict2 = cnn_predict(model, x_entity_test, y_entity_test)
-            y_entity_predict2 = [[x[0]+1] for x in y_entity_predict2]  # 全加1
-            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != [0] else y_entity_predict1[i] for i in
+            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != 0 else y_entity_predict1[i] for i in
                                 range(len(y_entity_predict1))]
             # print file_info['filename'], y_entity_predict
             y_predict.extend(y_entity_predict)
@@ -466,9 +398,9 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             # 加入记录
             file_info['entity'] = entity_df.to_dict(orient='records')
             for i in range(len(file_info['entity'])):
-                if y_entity_predict[i] == [2]:
+                if y_entity_predict[i] == 2:
                     file_info['entity'][i]['predict_polarity'] = 'pos'
-                elif y_entity_predict[i] == [1]:
+                elif y_entity_predict[i] == 1:
                     file_info['entity'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['entity'][i]['predict_polarity'] = 'none'
@@ -491,17 +423,16 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             print 'relation', scores
             y_relation_predict1 = predict_by_scores(scores)  # 过滤none
             y_relation_predict2 = cnn_predict(model, x_relation_test, y_relation_test)
-            y_relation_predict2 = [[x[0]+1] for x in y_relation_predict2]  # 全加1
-            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != [0] else y_relation_predict1[i] for i in
+            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != 0 else y_relation_predict1[i] for i in
                                 range(len(y_relation_predict1))]
             y_predict.extend(y_relation_predict)
 
             # 加入记录
             file_info['relation'] = relation_df.to_dict(orient='records')
             for i in range(len(file_info['relation'])):
-                if y_relation_predict[i] == [2]:
+                if y_relation_predict[i] == 2:
                     file_info['relation'][i]['predict_polarity'] = 'pos'
-                elif y_relation_predict[i] == [1]:
+                elif y_relation_predict[i] == 1:
                     file_info['relation'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['relation'][i]['predict_polarity'] = 'none'
@@ -520,17 +451,16 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
             print 'event', scores
             y_event_predict1 = predict_by_scores(scores)
             y_event_predict2 = cnn_predict(model, x_event_test, y_event_test)
-            y_event_predict2 = [[x[0]+1] for x in y_event_predict2]  # 全加1
-            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != [0] else y_event_predict1[i] for i in
+            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != 0 else y_event_predict1[i] for i in
                                 range(len(y_event_predict1))]
             y_predict.extend(y_event_predict)
 
             # 加入记录
             file_info['event'] = event_df.to_dict(orient='records')
             for i in range(len(file_info['event'])):
-                if y_event_predict[i] == [2]:
+                if y_event_predict[i] == 2:
                     file_info['event'][i]['predict_polarity'] = 'pos'
-                elif y_event_predict[i] == [1]:
+                elif y_event_predict[i] == 1:
                     file_info['event'][i]['predict_polarity'] = 'neg'
                 else:
                     file_info['event'][i]['predict_polarity'] = 'none'
