@@ -7,6 +7,7 @@ import nltk
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import Sequential
+from keras import backend
 from nltk.stem.wordnet import WordNetLemmatizer
 from pattern.en import sentiment
 import numpy as np
@@ -18,20 +19,7 @@ from write_best import *
 from find_source import *
 from filter_none_with_stdict import *
 from resampling import *
-
-
-def read_embedding_index(filename):
-    embeddings_index = {}
-    dim = 100
-    embedding_vectors_fp = open(filename)
-    for line in embedding_vectors_fp:
-        values = line.split()
-        word = values[0]
-        coefs = np.asarray(values[1:], dtype='float32')
-        embeddings_index[word] = coefs
-    embedding_vectors_fp.close()
-    # print('Found %s word vectors.' % len(embeddings_index))
-    return embeddings_index, dim
+from read_embedding_index import *
 
 
 def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
@@ -54,7 +42,7 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
     # 截断补齐
     curr_length = len(embeddings_matrix)
     if curr_length < clip_length:
-        embeddings_matrix += [[0.1] * 100] * (clip_length - curr_length)
+        embeddings_matrix += [[0.1] * dim] * (clip_length - curr_length)
     if curr_length > clip_length:
         embeddings_matrix = embeddings_matrix[:clip_length]
 
@@ -152,7 +140,7 @@ def gen_relation_features(relation_info_df, embeddings_index, dim, clip_length):
                 embeddings_matrix3.append(word_vector)
         # 合并
         embeddings_matrix = embeddings_matrix1
-        for k in range(clip_length):
+        for k in range(clip_length+16):
             for j in range(dim):
                 embeddings_matrix[k][j] += embeddings_matrix2[k][j]
                 embeddings_matrix[k][j] += embeddings_matrix3[k][j]
@@ -189,15 +177,25 @@ def gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, cl
 
 def convert_samples(features, labels, clip_length):
     labels = np.array(labels)
-    print 'Label shape: ', labels.shape
+    # print 'Label shape: ', labels.shape
     window_length = 16
-    data = np.empty((labels.shape[0], clip_length + window_length, 100, 1), dtype='float32')
-    # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
     count = 0
-    for feature in features:
-        data[count, :, :, 0] = feature
-        count += 1
-        features = data
+    if backend.image_dim_ordering() == 'th':
+        data = np.empty((labels.shape[0], 1, clip_length + window_length, 100), dtype='float32')
+        # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
+        for feature in features:
+            data[count, 0, :, :] = feature  # 通道维顺序？？不同后端不同，是不是要改？？
+            count += 1
+            features = data
+    else:
+        data = np.empty((labels.shape[0], clip_length + window_length, 100, 1), dtype='float32')
+        # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
+        for feature in features:
+            data[count, :, :, 0] = feature  # 通道维顺序？？不同后端不同，是不是要改？？
+            count += 1
+            features = data
+
+    print 'features shape:', features.shape
 
     return features, labels
 

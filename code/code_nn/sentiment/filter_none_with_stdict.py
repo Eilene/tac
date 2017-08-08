@@ -22,6 +22,13 @@ def scoring(text):  # 应是有情感词的就分高，不能正负相抵；意�
     return score
 
 
+def predict_by_score(score):
+    pred = 0
+    if score >= 1:
+        pred = 1
+    return pred
+
+
 def context_scoring(contexts):
     scores = []
     for text in contexts:
