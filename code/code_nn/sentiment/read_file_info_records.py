@@ -5,7 +5,8 @@ import pandas as pd
 
 
 def read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir):
-    records = []
+    df_records = []
+    nw_records = []
 
     ere_suffix = ".rich.ere.xml"
     ere_suffix_length = len(ere_suffix)
@@ -33,6 +34,10 @@ def read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_in
                     em_args_df = pd.read_csv(em_args_filepath)
                     record['em_args'] = em_args_df
             if record != {}:
-                records.append(record)
+                if record['filename'][:3] != 'AFP' and record['filename'][:3] != 'APW' \
+                        and record['filename'][:3] != 'NYT':  # 论坛数据
+                    df_records.append(record)
+                else:  # 新闻数据
+                    nw_records.append(record)
 
-    return records
+    return df_records, nw_records

@@ -180,7 +180,8 @@ def convert_samples(features, labels, clip_length):
     # print 'Label shape: ', labels.shape
     window_length = 16
     count = 0
-    if backend.image_dim_ordering() == 'th':
+    print backend.image_dim_ordering()
+    if backend.image_dim_ordering() == 'th':  # 竟然输出是tf？？
         data = np.empty((labels.shape[0], 1, clip_length + window_length, 100), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
@@ -195,7 +196,7 @@ def convert_samples(features, labels, clip_length):
             count += 1
             features = data
 
-    print 'features shape:', features.shape
+    print 'features shape:', features.shape  # 怎么还是在后面？？
 
     return features, labels
 
@@ -467,16 +468,30 @@ def test_process(model, test_files, embeddings_index, dim, clip_length):
 
 
 if __name__ == '__main__':
+    mode = True  # True:DF,false:NW
+
     # 读取各文件中间信息
     print 'Read data...'
-    file_info_records = read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
+    df_file_records, nw_file_records = \
+        read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
+    print len(df_file_records), len(nw_file_records)
 
-    # 按文件划分训练和测试集
-    print 'Split into train and test dataset...'
-    portion = 0.8
-    trainnum = int(len(file_info_records) * 0.8)
-    train_files = file_info_records[:trainnum]
-    test_files = file_info_records[trainnum:]
+    # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试
+    if mode is True:
+        print '**DF**'
+        print 'Split into train and test dataset...'
+        portion = 0.8
+        trainnum = int(len(df_file_records) * 0.8)
+        train_files = df_file_records[:trainnum]
+        test_files = df_file_records[trainnum:]
+    else:
+        print '**NW**'
+        print 'Merge and split into train and test dataset...'
+        portion = 0.2
+        nw_trainnum = int(len(nw_file_records) * portion)
+        train_files = df_file_records + nw_file_records[:nw_trainnum]
+        test_files = nw_file_records[nw_trainnum:]
+        print nw_trainnum
 
     # 训练部分
     # 提取特征，生成样本

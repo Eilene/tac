@@ -1,6 +1,7 @@
 # coding=utf-8
 import re
 import xml.dom.minidom
+import os
 
 import sys
 reload(sys)
@@ -11,8 +12,16 @@ def find_sources(test_files, source_dir, ere_dir):
     for i in range(len(test_files)):
         # source
         source_filepath = source_dir + test_files[i]['filename'] + ".cmp.txt"
+        if os.path.exists(source_filepath) is False:
+            # prefix_length = len('ENG_DF_000183_20150408_F0000009B')
+            # source_filepath = source_dir + test_files[i]['filename'][:prefix_length] + ".xml"  # 论坛xml
+            # print source_filepath
+            continue  # 没调好，先放放
         source_fp = open(source_filepath)
         all_source_text = source_fp.read().decode("utf-8")  # 注意编码
+        # if all_source_text is None:
+        #     print source_filepath
+        # print source_filepath, all_source_text
         
         # ere, entities
         ere_filepath = ere_dir + test_files[i]['filename'] + '.rich_ere.xml'
@@ -29,6 +38,9 @@ def find_sources(test_files, source_dir, ere_dir):
             text_text = text.firstChild.data
             entity_mention = {'ere_id': ere_id, 'offset': offset, 'length': length, 'text': text_text}
             entity_mentions.append(entity_mention)
+
+        # if source_filepath[-3:] == 'xml':
+        #     print ere_filepath, len(entity_mentions)
             
         if 'entity' in test_files[i]:
             for j in range(len(test_files[i]['entity'])):  # 其实只需非none的找即可
@@ -70,7 +82,7 @@ def find_sources(test_files, source_dir, ere_dir):
 
 
 def find_source(offset, length, id, all_source_text, entity_mentions):
-    (predict_text_offset, predict_source_text) = match(all_source_text, offset, length, id)
+    predict_text_offset, predict_source_text = match(all_source_text, offset, length, id)
     predict_source = find_source_id(predict_text_offset, entity_mentions)
     return predict_source
 

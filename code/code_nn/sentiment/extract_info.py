@@ -564,11 +564,22 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
         for ere_filename in ere_filenames:  # 输出文件信息
             part_name = ere_filename[:-ere_suffix_length]
             source_filepath = source_dir + part_name + ".cmp.txt"
-            if os.path.exists(source_filepath) is False:  # 不存在，则可能是新闻，xml，先跳过，后续考虑处理
-                # source_filepath = source_dir + part_name + ".xml"
-                continue
             ere_filepath = ere_dir + ere_filename
             annotation_filepath = annotation_dir + part_name + ".best.xml"
+            if os.path.exists(source_filepath) is False:  # 不存在，则是xml
+                prefix_length = len('ENG_DF_000183_20150408_F0000009B')  # 由于给的数据命名不统一，需要这样做
+                # df_prefix_length = len('ENG_DF')
+                # if part_name[:df_prefix_length] != 'ENG_DF':  # 跳过非论坛数据，即新闻数据
+                #     print 'Skip: ', part_name
+                #     continue
+                source_filepath = source_dir + part_name[:prefix_length] + ".xml"  # 论坛和新闻xml
+                # 但是新闻有的entity mention有个nom head字段，要不要加
+                # if os.path.exists(source_filepath) is False:  # 这里part_name的length小时，依然算，新闻会被加进来
+                #     print source_filepath
+                #     continue
+                print prefix_length, source_filepath
+                ere_filepath = ere_dir + ere_filename
+                annotation_filepath = annotation_dir + part_name + ".best.xml"
             # 跳过xml，全部188个文件
             # entity
             entity_records = extract_entity_each_file(source_filepath, ere_filepath,
