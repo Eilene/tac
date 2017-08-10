@@ -2,13 +2,14 @@
 
 import os
 import shutil
-import pandas as pd
 import xml.dom.minidom
 
-from constants import *
-from split_sentences import *
+import pandas as pd
+from utils.split_sentences import *
 
-import logging
+from utils.constants import *
+
+
 # logging.basicConfig(level=logging.DEBUG)
 # logger = logging.getLogger()
 
@@ -49,6 +50,7 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
 
     source_fp = open(source_filepath)
     all_source_text = source_fp.read().decode("utf-8")  # 注意编码
+    source_fp.close()
     sentences = split_sentences(all_source_text)  # 分句
 
     ere_file = xml.dom.minidom.parse(ere_filepath)
@@ -207,6 +209,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
 
     source_fp = open(source_filepath)
     all_source_text = source_fp.read().decode("utf-8")  # 注意编码
+    source_fp.close()
     sentences = split_sentences(all_source_text)  # 分句
 
     ere_file = xml.dom.minidom.parse(ere_filepath)
@@ -405,6 +408,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
 
     source_fp = open(source_filepath)
     all_source_text = source_fp.read().decode("utf-8")  # 注意编码
+    source_fp.close()
     sentences = split_sentences(all_source_text)  # 分句
 
     ere_file = xml.dom.minidom.parse(ere_filepath)
@@ -561,7 +565,7 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
     ere_suffix = ".rich_ere.xml"
     ere_suffix_length = len(ere_suffix)
     for parent, dirnames, ere_filenames in os.walk(ere_dir):
-        for ere_filename in ere_filenames:  # 输出文件信息
+        for ere_filename in ere_filenames:  # 有的source有多个ere和annotation，所以有后缀，一对多
             part_name = ere_filename[:-ere_suffix_length]
             source_filepath = source_dir + part_name + ".cmp.txt"
             ere_filepath = ere_dir + ere_filename

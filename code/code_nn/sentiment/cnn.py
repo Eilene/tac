@@ -1,25 +1,23 @@
 # coding=utf-8
 
-import random
-
 import keras
 import nltk
+import numpy as np
+
+from keras import backend
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import Sequential
-from keras import backend
 from nltk.stem.wordnet import WordNetLemmatizer
-from pattern.en import sentiment
-import numpy as np
 
-from constants import *
-from read_file_info_records import *
-from evaluation import *
-from write_best import *
-from find_source import *
-from filter_none_with_stdict import *
-from resampling import *
-from read_embedding_index import *
+from utils.evaluation import *
+from utils.filter_none_with_stdict import *
+from utils.find_source import *
+from utils.read_embedding_index import *
+from utils.read_file_info_records import *
+from utils.resampling import *
+from utils.write_best import *
+from utils.constants import *
 
 
 def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
@@ -519,5 +517,5 @@ if __name__ == '__main__':
 
     # 写入
     print 'Write into best files...'
-    write_best_files(test_files, output_dir)
+    write_best_files(test_files, predict_dir)
 

@@ -1,18 +1,21 @@
 # coding=utf-8
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.externals import joblib
-from sklearn import svm
 import nltk
+
 from pattern.en import lemma
 from pattern.en import sentiment
 
-from constants import *
-from read_file_info_records import *
-from evaluation import *
-from write_best import *
-from find_source import *
-from filter_none_with_stdict import *
+from sklearn import svm
+from sklearn.externals import joblib
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+from utils.evaluation import *
+from utils.filter_none_with_stdict import *
+from utils.find_source import *
+from utils.read_file_info_records import *
+from utils.resampling import *
+from utils.write_best import *
+from utils.constants import *
 
 
 def get_train_labels(str_labels):
