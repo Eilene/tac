@@ -1,23 +1,23 @@
 # coding=utf-8
 
 import keras
-import nltk
-import numpy as np
-
 from keras import backend
 from keras.layers import Conv2D, MaxPooling2D
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import Sequential
-from nltk.stem.wordnet import WordNetLemmatizer
 
-from utils.evaluation import *
+from utils.evaluation import evaluation_3classes
 from utils.filter_none_with_stdict import *
-from utils.find_source import *
+from utils.find_source import find_sources
 from utils.read_embedding_index import *
 from utils.read_file_info_records import *
-from utils.resampling import *
-from utils.write_best import *
+# from utils.resampling import *
+from utils.write_best import write_best_files
 from utils.constants import *
+from utils.file_records_other_modification import without_none, to_dict
+from utils.get_labels import get_merged_labels
+from utils.predict_by_proba import *
+from utils.attach_predict_labels import *
 
 
 def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
@@ -33,6 +33,7 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
         lemmed = lemm.lemmatize(word)
         if lemmed in embeddings_index:
             word_vector = embeddings_index[lemmed]
+            # print lemmed, word_vector
         else:
             word_vector = [0.01] * dim
         embeddings_matrix.append(word_vector)
@@ -47,29 +48,6 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
     return embeddings_matrix
 
 
-def get_train_labels(str_labels):
-    labels = []
-    datanum = len(str_labels)
-    labels = [0] * datanum
-    for i in range(datanum):
-        if str_labels[i] == 'pos':
-            labels[i] = 1
-    return labels
-
-
-def get_test_labels(str_labels):
-    datanum = len(str_labels)
-    labels = [0] * datanum
-    for i in range(datanum):
-        if str_labels[i] == 'pos':
-            labels[i] = 2
-        elif str_labels[i] == 'neg':
-            labels[i] = 1
-        else:
-            labels[i] = 0
-    return labels
-
-
 def gen_entity_features(entity_info_df, embeddings_index, dim, clip_length):
     # 特征
     # 上下文词向量矩阵
@@ -77,13 +55,15 @@ def gen_entity_features(entity_info_df, embeddings_index, dim, clip_length):
     contexts = entity_info_df['entity_mention_context']
     targets = entity_info_df['entity_mention_text']
     windows = entity_info_df['window_text']
-    # window_length = 10
+    window_length = 6
+    target_length = 10
+    context_length = clip_length - window_length - target_length
     # print len(contexts)
     for i in range(len(contexts)):
-        embeddings_matrix = gen_embeddings_matrix(contexts[i], clip_length, embeddings_index, dim)
-        target_matrix = gen_embeddings_matrix(targets[i], 10, embeddings_index, dim)
+        embeddings_matrix = gen_embeddings_matrix(contexts[i], context_length, embeddings_index, dim)
+        target_matrix = gen_embeddings_matrix(targets[i], target_length, embeddings_index, dim)
         embeddings_matrix.extend(target_matrix)
-        window_matrix = gen_embeddings_matrix(windows[i], 6, embeddings_index, dim)
+        window_matrix = gen_embeddings_matrix(windows[i], window_length, embeddings_index, dim)
         embeddings_matrix.extend(window_matrix)
         features.append(embeddings_matrix)
 
@@ -105,40 +85,43 @@ def gen_relation_features(relation_info_df, embeddings_index, dim, clip_length):
     rel_arg1_windows = relation_info_df['rel_arg1_window_text']
     rel_arg2_windows = relation_info_df['rel_arg1_window_text']
     # trigger_windows = relation_info_df['trigger_window_text']
-    # window_length = 6
+    window_length = 6
+    target_length = 10
+    context_length = clip_length - window_length - target_length
     for i in range(len(rel_arg1_contexts)):
         # 参数1
-        embeddings_matrix1 = gen_embeddings_matrix(rel_arg1_contexts[i], clip_length, embeddings_index, dim)
-        target_matrix1 = gen_embeddings_matrix(rel_arg1_texts[i], 10, embeddings_index, dim)
+        embeddings_matrix1 = gen_embeddings_matrix(rel_arg1_contexts[i], context_length, embeddings_index, dim)
+        target_matrix1 = gen_embeddings_matrix(rel_arg1_texts[i], target_length, embeddings_index, dim)
         embeddings_matrix1.extend(target_matrix1)
-        window_matrix1 = gen_embeddings_matrix(rel_arg1_windows[i], 6, embeddings_index, dim)
+        window_matrix1 = gen_embeddings_matrix(rel_arg1_windows[i], window_length, embeddings_index, dim)
         embeddings_matrix1.extend(window_matrix1)
         # 参数2
-        embeddings_matrix2 = gen_embeddings_matrix(rel_arg2_contexts[i], clip_length, embeddings_index, dim)
-        target_matrix2 = gen_embeddings_matrix(rel_arg2_texts[i], 10, embeddings_index, dim)
+        embeddings_matrix2 = gen_embeddings_matrix(rel_arg2_contexts[i], context_length, embeddings_index, dim)
+        target_matrix2 = gen_embeddings_matrix(rel_arg2_texts[i], target_length, embeddings_index, dim)
         embeddings_matrix2.extend(target_matrix2)
-        window_matrix2 = gen_embeddings_matrix(rel_arg2_windows[i], 6, embeddings_index, dim)
+        window_matrix2 = gen_embeddings_matrix(rel_arg2_windows[i], window_length, embeddings_index, dim)
         embeddings_matrix2.extend(window_matrix2)
         # 触发词
         embeddings_matrix3 = []
-        if int(trigger_offsets[i]) != 0:
+        if int(trigger_offsets[i]) == 0:
             word_vector = [0.01] * dim
             for j in range(clip_length):
                 embeddings_matrix3.append(word_vector)
             for j in range(16):
                 embeddings_matrix3.append(word_vector)
         else:
-            embeddings_matrix3 = gen_embeddings_matrix(trigger_contexts[i], clip_length, embeddings_index, dim)
-            target_matrix3 = gen_embeddings_matrix(trigger_texts[i], 10, embeddings_index, dim)
+            embeddings_matrix3 = gen_embeddings_matrix(trigger_contexts[i], context_length, embeddings_index, dim)
+            target_matrix3 = gen_embeddings_matrix(trigger_texts[i], target_length, embeddings_index, dim)
             embeddings_matrix3.extend(target_matrix3)
-            # window_matrix3 = gen_embeddings_matrix(trigger_windows[i], 6, embeddings_index, dim)
+            # window_matrix3 = gen_embeddings_matrix(trigger_windows[i], window_length, embeddings_index, dim)
             # embeddings_matrix3.extend(window_matrix3)
+            # trigger暂没有提窗口特征
             word_vector = [0.01] * dim
-            for j in range(6):
+            for j in range(window_length):
                 embeddings_matrix3.append(word_vector)
         # 合并
         embeddings_matrix = embeddings_matrix1
-        for k in range(clip_length+16):
+        for k in range(clip_length):
             for j in range(dim):
                 embeddings_matrix[k][j] += embeddings_matrix2[k][j]
                 embeddings_matrix[k][j] += embeddings_matrix3[k][j]
@@ -157,120 +140,72 @@ def gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, cl
     trigger_contexts = event_info_df['trigger_context']
     trigger_texts = event_info_df['trigger_text']
     trigger_windows = event_info_df['trigger_window_text']
-    # window_length = 6
+    window_length = 6
+    target_length = 10
+    context_length = clip_length - window_length - target_length
     for i in range(len(trigger_contexts)):
         # 触发词
-        embeddings_matrix3 = gen_embeddings_matrix(trigger_contexts[i], clip_length, embeddings_index, dim)
-        target_matrix3 = gen_embeddings_matrix(trigger_texts[i], 10, embeddings_index, dim)
+        embeddings_matrix3 = gen_embeddings_matrix(trigger_contexts[i], context_length, embeddings_index, dim)
+        target_matrix3 = gen_embeddings_matrix(trigger_texts[i], target_length, embeddings_index, dim)
         embeddings_matrix3.extend(target_matrix3)
-        window_matrix3 = gen_embeddings_matrix(trigger_windows[i], 6, embeddings_index, dim)
+        window_matrix3 = gen_embeddings_matrix(trigger_windows[i], window_length, embeddings_index, dim)
         embeddings_matrix3.extend(window_matrix3)
         # 各个参数（似乎上下文都一样，取一个即可）
         # 合并
         embeddings_matrix = embeddings_matrix3
 
         features.append(embeddings_matrix)
+
     return features
 
 
-def convert_samples(features, labels, clip_length):
+def convert_samples(features, labels):
     labels = np.array(labels)
     # print 'Label shape: ', labels.shape
-    window_length = 16
+    matrix_length = len(features[0])
     count = 0
     print backend.image_dim_ordering()
     if backend.image_dim_ordering() == 'th':  # 竟然输出是tf？？
-        data = np.empty((labels.shape[0], 1, clip_length + window_length, 100), dtype='float32')
+        data = np.empty((labels.shape[0], 1, matrix_length, 100), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
             data[count, 0, :, :] = feature  # 通道维顺序？？不同后端不同，是不是要改？？
             count += 1
             features = data
     else:
-        data = np.empty((labels.shape[0], clip_length + window_length, 100, 1), dtype='float32')
+        data = np.empty((labels.shape[0], matrix_length, 100, 1), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
-            data[count, :, :, 0] = feature  # 通道维顺序？？不同后端不同，是不是要改？？
+            data[count, :, :, 0] = feature
             count += 1
             features = data
 
-    print 'features shape:', features.shape  # 怎么还是在后面？？
+    print 'Features shape:', features.shape
 
     return features, labels
 
 
-def gen_train_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    str_labels = entity_info_df['label_polarity'].values
-    labels = get_train_labels(str_labels)
+def gen_cnn_features(file_records, embeddings_index, dim, clip_length):
+    features = []
 
-    # 特征
-    features = gen_entity_features(entity_info_df, embeddings_index, dim, clip_length)
+    for file_info in file_records:
+        if 'entity' in file_info:
+            entity_df = file_info['entity']
+            if len(entity_df) != 0:
+                x_entity = gen_entity_features(entity_df, embeddings_index, dim, clip_length)
+                features.extend(x_entity)
+        if 'relation' in file_info:
+            relation_df = file_info['relation']
+            if len(relation_df) != 0:
+                x_relation = gen_relation_features(relation_df, embeddings_index, dim, clip_length)
+                features.extend(x_relation)
+        if 'event' in file_info:
+            event_df = file_info['event']
+            if len(event_df) != 0:
+                x_event = gen_event_features(event_df, file_info['em_args'], embeddings_index, dim, clip_length)
+                features.extend(x_event)
 
-    return features, labels
-
-
-def gen_test_entity_samples(entity_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    str_labels = entity_info_df['label_polarity'].values
-    labels = get_test_labels(str_labels)
-
-    # 特征
-    features = gen_entity_features(entity_info_df, embeddings_index, dim, clip_length)
-
-    return features, labels
-
-
-def gen_train_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    str_labels = relation_info_df['label_polarity'].values
-    labels = get_train_labels(str_labels)
-
-    # 特征
-    # 词向量矩阵
-    # 两个参数+触发词
-    features = gen_relation_features(relation_info_df, embeddings_index, dim, clip_length)
-
-    return features, labels
-
-
-def gen_test_relation_samples(relation_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    str_labels = relation_info_df['label_polarity'].values
-    labels = get_test_labels(str_labels)
-
-    # 特征
-    # 词向量矩阵
-    # 两个参数+触发词
-    features = gen_relation_features(relation_info_df, embeddings_index, dim, clip_length)
-
-    return features, labels
-
-
-def gen_train_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    str_labels = event_info_df['label_polarity'].values
-    labels = get_train_labels(str_labels)
-
-    # 特征
-    # 词向量矩阵
-    # 触发词+各个参数
-    features = gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, clip_length)
-
-    return features, labels
-
-
-def gen_test_event_samples(event_info_df, em_args_info_df, embeddings_index, dim, clip_length):
-    # 标签
-    str_labels = event_info_df['label_polarity'].values
-    labels = get_test_labels(str_labels)
-
-    # 特征
-    # 词向量矩阵
-    # 触发词+各个参数
-    features = gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, clip_length)
-
-    return features, labels
+    return features
 
 
 def cnn_fit(x_train, y_train):
@@ -316,155 +251,6 @@ def cnn_fit(x_train, y_train):
     return model
 
 
-def cnn_predict(model, x_test, y_test):
-    probabilities = model.predict(x_test)
-    y_predict = []
-    # print probabilities
-    for i in probabilities:
-        if i[1] - i[0] > 0.1:  # 可调阈值，过滤0
-            y_predict.append(2)
-        elif i[0] - i[1] > 0.1:
-            y_predict.append(1)
-        else:
-            y_predict.append(0)
-    accuracy = np.mean(y_predict == y_test)
-    print("Prediction Accuracy: %.2f%%" % (accuracy * 100))
-    return y_predict
-
-
-def get_train_samples(train_files, embeddings_index, dim, clip_length):
-    x_train = []
-    y_train = []
-
-    for file_info in train_files:
-        if 'entity' in file_info:
-            entity_df = file_info['entity']
-            entity_df = entity_df[entity_df.label_polarity != 'none'].reset_index()  # none的去掉
-            if len(entity_df) != 0:
-                x_entity_train, y_entity_train = gen_train_entity_samples(entity_df, embeddings_index, dim, clip_length)
-                x_train.extend(x_entity_train)
-                y_train.extend(y_entity_train)
-        if 'relation' in file_info:
-            relation_df = file_info['relation']
-            relation_df = relation_df[relation_df.label_polarity != 'none'].reset_index()
-            if len(relation_df) != 0:
-                x_relation_train, y_relation_train = gen_train_relation_samples(relation_df, embeddings_index, dim, clip_length)
-                x_train.extend(x_relation_train)
-                y_train.extend(y_relation_train)
-        if 'event' in file_info:
-            event_df = file_info['event']
-            event_df = event_df[event_df.label_polarity != 'none'].reset_index()
-            if len(event_df) != 0:
-                x_event_train, y_event_train = gen_train_event_samples(event_df, pd.DataFrame(file_info['em_args']),
-                                                                 embeddings_index, dim, clip_length)
-                x_train.extend(x_event_train)
-                y_train.extend(y_event_train)
-
-    # 重采样
-    # x_train, y_train = resampling(x_train, y_train)  # 效果不好，因为评测指标是有无算F，不管正负，正负只要对的多就好
-
-    # 转化成单通道输入方式
-    x_train, y_train = convert_samples(x_train, y_train, clip_length)
-
-    return x_train, y_train
-
-
-def test_process(model, test_files, embeddings_index, dim, clip_length):
-    y_test = []
-    y_predict = []
-
-    for file_info in test_files:
-        if 'entity' in file_info:
-            x_entity_test, y_entity_test = gen_test_entity_samples(file_info['entity'],
-                                                              embeddings_index, dim, clip_length)
-            y_test.extend(y_entity_test)
-            x_entity_test, y_entity_test = convert_samples(x_entity_test, y_entity_test, clip_length)
-
-            # 先用词典过滤none，再正负分类
-            entity_df = file_info['entity']
-            contexts = entity_df['entity_mention_context']
-            scores = context_scoring(contexts)
-            print 'entity', scores
-            y_entity_predict1 = predict_by_scores(scores)  # 过滤none
-            y_entity_predict2 = cnn_predict(model, x_entity_test, y_entity_test)
-            y_entity_predict = [y_entity_predict2[i] if y_entity_predict1[i] != 0 else y_entity_predict1[i] for i in
-                                range(len(y_entity_predict1))]
-            # print file_info['filename'], y_entity_predict
-            y_predict.extend(y_entity_predict)
-
-            # 加入记录
-            file_info['entity'] = entity_df.to_dict(orient='records')
-            for i in range(len(file_info['entity'])):
-                if y_entity_predict[i] == 2:
-                    file_info['entity'][i]['predict_polarity'] = 'pos'
-                elif y_entity_predict[i] == 1:
-                    file_info['entity'][i]['predict_polarity'] = 'neg'
-                else:
-                    file_info['entity'][i]['predict_polarity'] = 'none'
-                    
-        if 'relation' in file_info:
-            x_relation_test, y_relation_test = gen_test_relation_samples(file_info['relation'],
-                                                                    embeddings_index, dim, clip_length)
-            y_test.extend(y_relation_test)
-            x_relation_test, y_relation_test = convert_samples(x_relation_test, y_relation_test, clip_length)
-            
-            # 先用词典过滤none，再正负分类
-            relation_df = file_info['relation']
-            rel_arg1_contexts = relation_df['rel_arg1_context']
-            rel_arg2_contexts = relation_df['rel_arg2_context']
-            contexts = []
-            for i in range(len(rel_arg1_contexts)):
-                context = rel_arg1_contexts[i] + ' ' + rel_arg2_contexts[i]
-                contexts.append(context)
-            scores = context_scoring(contexts)
-            print 'relation', scores
-            y_relation_predict1 = predict_by_scores(scores)  # 过滤none
-            y_relation_predict2 = cnn_predict(model, x_relation_test, y_relation_test)
-            y_relation_predict = [y_relation_predict2[i] if y_relation_predict1[i] != 0 else y_relation_predict1[i] for i in
-                                range(len(y_relation_predict1))]
-            y_predict.extend(y_relation_predict)
-
-            # 加入记录
-            file_info['relation'] = relation_df.to_dict(orient='records')
-            for i in range(len(file_info['relation'])):
-                if y_relation_predict[i] == 2:
-                    file_info['relation'][i]['predict_polarity'] = 'pos'
-                elif y_relation_predict[i] == 1:
-                    file_info['relation'][i]['predict_polarity'] = 'neg'
-                else:
-                    file_info['relation'][i]['predict_polarity'] = 'none'
-
-        if 'event' in file_info:
-            x_event_test, y_event_test = gen_test_event_samples(file_info['event'],
-                                                           file_info['em_args'],
-                                                           embeddings_index, dim, clip_length)
-            y_test.extend(y_event_test)
-            x_event_test, y_event_test = convert_samples(x_event_test, y_event_test, clip_length)
-
-            # 先用词典过滤none，再正负分类
-            event_df = file_info['event']
-            contexts = event_df['trigger_context']
-            scores = context_scoring(contexts)
-            print 'event', scores
-            y_event_predict1 = predict_by_scores(scores)
-            y_event_predict2 = cnn_predict(model, x_event_test, y_event_test)
-            y_event_predict = [y_event_predict2[i] if y_event_predict1[i] != 0 else y_event_predict1[i] for i in
-                                range(len(y_event_predict1))]
-            y_predict.extend(y_event_predict)
-
-            # 加入记录
-            file_info['event'] = event_df.to_dict(orient='records')
-            for i in range(len(file_info['event'])):
-                if y_event_predict[i] == 2:
-                    file_info['event'][i]['predict_polarity'] = 'pos'
-                elif y_event_predict[i] == 1:
-                    file_info['event'][i]['predict_polarity'] = 'neg'
-                else:
-                    file_info['event'][i]['predict_polarity'] = 'none'
-
-    return test_files, y_test, y_predict
-
-
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
 
@@ -472,48 +258,63 @@ if __name__ == '__main__':
     print 'Read data...'
     df_file_records, nw_file_records = \
         read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
-    print len(df_file_records), len(nw_file_records)
+    print 'DF files:', len(df_file_records), ' NW files:', len(nw_file_records)
 
     # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试
     if mode is True:
-        print '**DF**'
+        print '*** DF ***'
         print 'Split into train and test dataset...'
         portion = 0.8
         trainnum = int(len(df_file_records) * 0.8)
         train_files = df_file_records[:trainnum]
         test_files = df_file_records[trainnum:]
     else:
-        print '**NW**'
+        print '*** NW ***'
         print 'Merge and split into train and test dataset...'
         portion = 0.2
         nw_trainnum = int(len(nw_file_records) * portion)
         train_files = df_file_records + nw_file_records[:nw_trainnum]
         test_files = nw_file_records[nw_trainnum:]
-        print nw_trainnum
 
     # 训练部分
-    # 提取特征，生成样本
-    clip_length = 40
+    # 提取特征及标签
+    total_clip_length = 56
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     print 'Train samples extraction...'
-    x_train, y_train = get_train_samples(train_files, embeddings_index, dim, clip_length)
-    print 'Train data number:', len(y_train)
-    # cnn训练
+    train_files = without_none(train_files)  # 训练文件去掉none的样本
+    x_train = gen_cnn_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    y_train = get_merged_labels(train_files)  # 只有1,2两类
+    y_train = [y-1 for y in y_train]  # 改为0,1
+    x_train, y_train = convert_samples(x_train, y_train)  # 转换为通道模式
     print 'Train...'
     model = cnn_fit(x_train, y_train)  # 分正负
 
     # 测试部分
+    # 提取特征及标签
+    print 'Test samples extraction...'
+    x_test = gen_cnn_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    y_test = get_merged_labels(test_files)  # 0,1,2三类
+    x_test, y_test = convert_samples(x_test, y_test)
+    # 测试
     print 'Test...'
-    test_files, y_test, y_predict = test_process(model, test_files, embeddings_index, dim, clip_length)
-    # 测试评价
+    probabilities = model.predict(x_test)
+    y_predict = predict_by_proba(probabilities, 0.2)
+
+    # 评价
+    y_test = y_test.tolist()
     print 'Evalution: '
     print 'Test labels: ', y_test
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
+    # 测试结果写入记录
+    test_files = to_dict(test_files)
+    test_files = attach_predict_labels(test_files, y_predict)
+
     # 寻找源
     print 'Find sources... '
     test_files = find_sources(test_files, source_dir, ere_dir)
+    # test_files = use_annotation_source(test_files)
 
     # 写入
     print 'Write into best files...'

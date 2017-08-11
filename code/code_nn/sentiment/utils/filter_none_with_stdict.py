@@ -40,3 +40,37 @@ def predict_by_scores(scores):
     pred = [0 if score < 1 else 1 for score in scores]
     return pred
 
+
+def filter_none(file_records):
+    pred = []
+    for i in range(len(file_records)):
+        if 'entity' in file_records[i]:
+            # 取上下文
+            contexts = file_records[i]['entity']['entity_mention_context']
+            # 打分
+            scores = context_scoring(contexts)
+            # 根据分给一份predict
+            p = predict_by_scores(scores)
+            pred.extend(p)
+        if 'relation' in file_records[i]:
+            # 取上下文
+            rel_arg1_contexts = file_records[i]['relation']['rel_arg1_context']
+            rel_arg2_contexts = file_records[i]['relation']['rel_arg2_context']
+            contexts = []
+            for j in range(len(rel_arg1_contexts)):
+                context = rel_arg1_contexts[j] + ' ' + rel_arg2_contexts[j]
+                contexts.append(context)
+            # 打分
+            scores = context_scoring(contexts)
+            # 根据分给一份predict
+            p = predict_by_scores(scores)
+            pred.extend(p)
+        if 'event' in file_records[i]:
+            # 取上下文
+            contexts = file_records[i]['event']['trigger_context']
+            # 打分
+            scores = context_scoring(contexts)
+            # 根据分给一份predict
+            p = predict_by_scores(scores)
+            pred.extend(p)
+    return pred
