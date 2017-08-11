@@ -165,7 +165,7 @@ def convert_samples(features, labels):
     matrix_length = len(features[0])
     count = 0
     print backend.image_dim_ordering()
-    if backend.image_dim_ordering() == 'th':  # 竟然输出是tf？？
+    if backend.image_dim_ordering() == 'th':  # 竟然输出是tf，且倒过来真报错
         data = np.empty((labels.shape[0], 1, matrix_length, 100), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
@@ -208,7 +208,7 @@ def gen_cnn_features(file_records, embeddings_index, dim, clip_length):
     return features
 
 
-def cnn_fit(x_train, y_train):
+def cnn_fit(x_train, y_train, classnum):
     # 训练集进一步划分开发集
     input_shape = x_train.shape[1:]  # 与samples个数无关
     split_at = len(x_train) - len(x_train) // 10  # 这是多少？
@@ -218,14 +218,14 @@ def cnn_fit(x_train, y_train):
 
     # 转换标签格式
     # print y_train_new
-    y_train_new = keras.utils.to_categorical(y_train_new, 2)
-    y_dev = keras.utils.to_categorical(y_dev, 2)
+    y_train_new = keras.utils.to_categorical(y_train_new, classnum)
+    y_dev = keras.utils.to_categorical(y_dev, classnum)
     # print y_train_new
     # print y_train_new.shape
 
     # 开始建立CNN模型
     batch_size = 128
-    epochs = 3
+    epochs = 5
 
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
@@ -237,7 +237,7 @@ def cnn_fit(x_train, y_train):
     model.add(Flatten())
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(2, activation='softmax'))
+    model.add(Dense(classnum, activation='softmax'))
     # sgd = keras.optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 
     model.compile(loss=keras.losses.binary_crossentropy, optimizer='Adam', metrics=['accuracy'])
@@ -286,8 +286,9 @@ if __name__ == '__main__':
     y_train = get_merged_labels(train_files)  # 只有1,2两类
     y_train = [y-1 for y in y_train]  # 改为0,1
     x_train, y_train = convert_samples(x_train, y_train)  # 转换为通道模式
+    # 训练
     print 'Train...'
-    model = cnn_fit(x_train, y_train)  # 分正负
+    model = cnn_fit(x_train, y_train, 2)  # 分正负
 
     # 测试部分
     # 提取特征及标签
@@ -298,7 +299,7 @@ if __name__ == '__main__':
     # 测试
     print 'Test...'
     probabilities = model.predict(x_test)
-    y_predict = predict_by_proba(probabilities, 0.2)
+    y_predict = predict_by_proba(probabilities, 0.1)
 
     # 评价
     y_test = y_test.tolist()

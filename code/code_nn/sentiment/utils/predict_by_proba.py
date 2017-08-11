@@ -11,3 +11,10 @@ def predict_by_proba(proba, threshold):
         else:
             y_pred.append(0)
     return y_pred
+
+
+def predict_by_proba_nothreshold(proba):
+    y_pred = []
+    for p in proba:
+            y_pred.append(p.tolist().index(max(p)))
+    return y_pred

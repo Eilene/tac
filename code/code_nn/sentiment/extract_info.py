@@ -332,7 +332,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg1_mention_noun_type': rel_arg1_mention_noun_type,
                 'rel_arg1_mention_offset': rel_arg1_mention_offset,
                 'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context': rel_arg1_context,
-                'rel_arg1_window_text': rel_arg2_window_text,
+                'rel_arg1_window_text': rel_arg1_window_text,
                 'rel_arg2_id': rel_arg2_id, 'rel_arg2_mention_id': rel_arg2_mention_id,
                 'rel_arg2_role': rel_arg2_role, 'rel_arg2_text': rel_arg2_text,
                 'rel_arg2_entity_type': rel_arg2_entity_type,

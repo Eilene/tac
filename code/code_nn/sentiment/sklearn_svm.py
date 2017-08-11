@@ -59,7 +59,7 @@ def gen_sklearn_features(train_files, test_files):
             texts.extend(event_texts.tolist())
 
     # tfidf
-    vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='english', max_features=1000, binary=True)
+    vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='english', max_features=300, binary=True)
     tfidf_features = vec.fit_transform(contexts).toarray()
     tfidf_features = tfidf_features.tolist()
     features = tfidf_features
@@ -163,15 +163,16 @@ if __name__ == '__main__':
     print 'Test...'
     clf = joblib.load('svm_model.m')
     y_pred_proba = clf.predict_proba(x_test)
-    y_predict = predict_by_proba(y_pred_proba, 0.4)
+    y_predict = predict_by_proba(y_pred_proba, 0.0)
     # 测试文件根据打分过滤掉none的样本
-    # y_predict1 = filter_none(test_files)
-    # y_predict = [y_predict[i] if y_predict1[i] != 0 else y_predict1[i] for i in range(len(y_predict))]
+    y_predict1 = filter_none(test_files)
+    # y_predict1 = filter_none_with_window_text(test_files)
+    y_predict = [y_predict[i] if y_predict1[i] != 0 else y_predict1[i] for i in range(len(y_predict))]
 
     # 评价
     print 'Evalution: '
     print 'Test labels: ', y_test
-    # print 'Filter labels:', y_predict1
+    print 'Filter labels:', y_predict1
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
