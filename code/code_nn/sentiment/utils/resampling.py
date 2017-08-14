@@ -3,7 +3,7 @@
 import random
 
 
-def resampling_3classes(x, y):
+def resampling_3classes(x, y, samplenum=-1):
     x_new = []
     y_new = []
 
@@ -29,16 +29,17 @@ def resampling_3classes(x, y):
     none_num = len(none_index)
     print pos_num, neg_num, none_num
 
-    samplenum = int(neg_num * 3)  # 这个看着调
+    if samplenum == -1:  # 使用默认值
+        samplenum = int(neg_num * 3)  # 这个看着调
 
     for i in range(samplenum):
-        flag = random.randint(1, 7)
-        if flag == 2 or flag == 3:
+        flag = random.randint(1, 3)
+        if flag == 2:
             index = random.randint(0, pos_num-1)
             x_new.append(x[pos_index[index]])
             y_new.append(y[pos_index[index]])
             pos += 1
-        elif flag == 1 or flag == 4 or flag == 5:
+        elif flag == 1:
             index = random.randint(0, neg_num-1)
             x_new.append(x[neg_index[index]])
             y_new.append(y[neg_index[index]])
@@ -53,9 +54,8 @@ def resampling_3classes(x, y):
     return x_new, y_new
 
 
-
 # 二类，采样
-def resampling(x, y):
+def resampling(x, y, samplenum=-1):
     x_new = []
     y_new = []
 
@@ -74,7 +74,8 @@ def resampling(x, y):
     neg = 0
     pos_num = len(pos_index)
     neg_num = len(neg_index)
-    samplenum = int(pos_num * 4)
+    if samplenum == -1:  # 使用默认值
+        samplenum = int(pos_num + neg_num)
     for i in range(samplenum):
         flag = random.randint(1, 2)
         if flag == 1:

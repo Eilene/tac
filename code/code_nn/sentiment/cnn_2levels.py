@@ -50,7 +50,7 @@ if __name__ == '__main__':
     y_train1 = [1 if y != 0 else 0 for y in y_train]
     x_train2, y_train2 = only_pos_neg(x_train, y_train)
     y_train2 = [y-1 for y in y_train2]
-    x_train1, y_train1 = resampling(x_train, y_train1)  # 重采样
+    x_train1, y_train1 = resampling(x_train, y_train1, len(y_train2) * 2)  # 重采样
     x_train2, y_train2 = resampling(x_train2, y_train2)  # 重采样
     x_train1, y_train1 = convert_samples(x_train1, y_train1)  # 转换为通道模式
     x_train2, y_train2 = convert_samples(x_train2, y_train2)  # 转换为通道模式
@@ -79,6 +79,8 @@ if __name__ == '__main__':
     y_test = y_test.tolist()
     print 'Evalution: '
     print 'Test labels: ', y_test
+    print 'Predict labels 1: ', y_predict1
+    print 'Predict labels 2: ', y_predict2
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 

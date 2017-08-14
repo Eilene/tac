@@ -2,6 +2,8 @@
 
 import nltk
 
+import numpy as np
+
 from pattern.en import lemma
 from pattern.en import sentiment
 
@@ -45,7 +47,11 @@ def gen_sklearn_features(train_files, test_files):
             rel_arg2_texts = relation_df['rel_arg2_text']
             relation_texts = []
             for i in range(len(rel_arg1_contexts)):
-                context = rel_arg1_contexts[i] + ' ' + rel_arg2_contexts[i]
+                # if rel_arg1_contexts[i] == np.nan:  # 寻么填充和这个都不管用。。
+                #     rel_arg1_contexts[i] = ''
+                # if rel_arg2_contexts[i] == np.nan:
+                #     rel_arg2_contexts[i] = ''
+                context = str(rel_arg1_contexts[i]) + ' ' + str(rel_arg2_contexts[i])
                 relation_contexts.append(context)
                 text = rel_arg1_texts[i] + ' ' + rel_arg2_texts[i]
                 relation_texts.append(text)
