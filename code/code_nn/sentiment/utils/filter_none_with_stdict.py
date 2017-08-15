@@ -18,7 +18,7 @@ def scoring(text):  # 应是有情感词的就分高，不能正负相抵；意�
         lemmed = lemm.lemmatize(word)
         polarity = sentiment(lemmed)[0]
         if abs(polarity) >= 0.5:
-            print lemmed
+            # print lemmed
             score += 1
     return score
 

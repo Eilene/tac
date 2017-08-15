@@ -1,7 +1,16 @@
 # coding=utf-8
 
-from sklearn_svm import *
 from sklearn import linear_model
+
+from utils.constants import *
+from utils.read_file_info_records import *
+from utils.file_records_other_modification import to_dict
+from utils.evaluation import evaluation_3classes
+from utils.attach_predict_labels import attach_predict_labels
+from utils.find_source import find_sources
+from utils.write_best import write_best_files
+from utils.get_labels import get_merged_labels
+from utils.extract_features import gen_vector_features
 from utils.resampling import resampling_3classes
 
 if __name__ == '__main__':
@@ -31,14 +40,15 @@ if __name__ == '__main__':
 
     # 提取特征及标签
     print "Samples extraction..."
-    x_all = gen_sklearn_features(train_files, test_files)  # 提取特征
+    # x_all = gen_sklearn_features(train_files, test_files)  # 提取特征
+    x_all = gen_vector_features(train_files, test_files)  # 提取特征
     y_train = get_merged_labels(train_files)
     y_test = get_merged_labels(test_files)  # 0,1,2三类
     # 特征分割训练测试集
     trainlen = len(y_train)
     x_train = x_all[:trainlen]
     x_test = x_all[trainlen:]
-    x_train, y_train = resampling_3classes(x_train, y_train, 6000)  # 重采样
+    x_train, y_train = resampling_3classes(x_train, y_train)  # 重采样
     print 'Train data number:', len(y_train)
     print 'Test data number:', len(y_test)
     print 'Train labels:', y_train
@@ -47,22 +57,22 @@ if __name__ == '__main__':
 
     # 训练
     print 'Train...'
-    regr = linear_model.LinearRegression(normalize=True)  # 使用线性回归
-    # regr = linear_model.RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0])
+    # regr = linear_model.LinearRegression(normalize=True)  # 使用线性回归
+    regr = linear_model.RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0])
     regr.fit(x_train, y_train)
 
     # 测试
     print 'Test...'
     y_predict = regr.predict(X=x_test)  # 预测
     print y_predict
-    y_predict = [int(y) for y in y_predict]
     for i in range(len(y_predict)):
-        if y_predict[i] < 0.5:
+        if y_predict[i] < 0.7:
             y_predict[i] = 0
-        elif y_predict[i] < 1.5:
+        elif y_predict[i] < 1.7:
             y_predict[i] = 1
         else:
             y_predict[i] = 2
+    y_predict = [int(y) for y in y_predict]
 
     # 评价
     print 'Evalution: '

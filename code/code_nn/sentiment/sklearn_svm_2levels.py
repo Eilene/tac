@@ -1,7 +1,19 @@
 # coding=utf-8
 
-from sklearn_svm import *
+from sklearn import svm
+from sklearn.externals import joblib
+
+from utils.constants import *
+from utils.read_file_info_records import *
+from utils.file_records_other_modification import to_dict
 from utils.resampling import resampling
+from utils.evaluation import evaluation_3classes
+from utils.attach_predict_labels import attach_predict_labels
+from utils.find_source import find_sources
+from utils.write_best import write_best_files
+from utils.get_labels import get_merged_labels
+from utils.predict_by_proba import *
+from utils.extract_features import gen_vector_features
 
 
 def only_pos_neg(x, y):
@@ -42,7 +54,7 @@ if __name__ == '__main__':
 
     # 提取特征及标签
     print "Samples extraction..."
-    x_all = gen_sklearn_features(train_files, test_files)  # 提取特征
+    x_all = gen_vector_features(train_files, test_files)  # 提取特征
     y_train = get_merged_labels(train_files)  # 只有1,2两类
     y_test = get_merged_labels(test_files)  # 0,1,2三类
     # 特征分割训练测试集

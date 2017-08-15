@@ -132,6 +132,7 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
                 'entity_mention_id': entity_mention_id, 'entity_mention_noun_type': entity_mention_noun_type,
                 'entity_mention_offset': entity_mention_offset, 'entity_mention_length': entity_mention_length,
                 'entity_mention_text': text_text, 'entity_mention_context': context, 'window_text': window_text,
+                'entity_mention_sentence': sen, 'entity_mention_sentence_offset': sen_offset,
                 'file': part_name, 'label_polarity': label_polarity,
                 'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
                 'source_text': source_text
@@ -172,7 +173,7 @@ def rel_arg_entity_info(entity_list, rel_arg_id, rel_arg_mention_id, rel_arg_tex
                     sen_offset = rel_arg_context_dict[0]['offset']
                     window_text = get_window_text(window_length, sen, sen_offset, rel_arg_text, rel_arg_mention_offset)
                     return rel_arg_entity_type, rel_arg_entity_specificity, rel_arg_mention_noun_type, \
-                           rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text
+                           rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text, sen, sen_offset
 
 
 # rel_arg的所属filler信息
@@ -199,9 +200,12 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
                 sen = rel_arg_context_dict[0]['text']
                 sen_offset = rel_arg_context_dict[0]['offset']
                 window_text = get_window_text(window_length, sen, sen_offset, rel_arg_text, rel_arg_mention_offset)
-            else:
+            else:  # 会出现？？
                 window_text = ''
-            return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text
+                sen = ''
+                sen_offset = 0
+            return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text, \
+                   sen, sen_offset
 
 
 def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
@@ -259,9 +263,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
             rel_arg1_text = rel_arg1.firstChild.data
             # 所属entity及entity mention信息
             rel_arg1_entity_type, rel_arg1_entity_specificity, rel_arg1_mention_noun_type, rel_arg1_mention_offset, \
-            rel_arg1_mention_length, rel_arg1_context, rel_arg1_window_text = rel_arg_entity_info(entity_list, rel_arg1_id,
-                                                                            rel_arg1_mention_id, rel_arg1_text,
-                                                                            sentences)
+            rel_arg1_mention_length, rel_arg1_context, rel_arg1_window_text, rel_arg1_sentence, rel_arg1_sentence_offset\
+                = rel_arg_entity_info(entity_list, rel_arg1_id, rel_arg1_mention_id, rel_arg1_text, sentences)
 
             # rel_arg，同上
             rel_arg2 = relation_mention_list[j].getElementsByTagName('rel_arg2')
@@ -273,16 +276,16 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_mention_id = rel_arg2.getAttribute('entity_mention_id')
                 # 所属entity及entity mention信息
                 rel_arg2_entity_type, rel_arg2_entity_specificity, rel_arg2_mention_noun_type, rel_arg2_mention_offset, \
-                rel_arg2_mention_length, rel_arg2_context, rel_arg2_window_text = rel_arg_entity_info(entity_list, rel_arg2_id,
-                                                                            rel_arg2_mention_id, rel_arg2_text,
-                                                                            sentences)
+                rel_arg2_mention_length, rel_arg2_context, rel_arg2_window_text, rel_arg2_sentence, rel_arg2_sentence_offset = \
+                    rel_arg_entity_info(entity_list, rel_arg2_id, rel_arg2_mention_id, rel_arg2_text, sentences)
                 rel_arg2_is_filler = 0
             else:  # rel_arg2有的不是entity是filler，先简单处理
                 rel_arg2_is_filler = 1
                 rel_arg2_id = rel_arg2.getAttribute('filler_id')
                 # if rel_arg2_id == '':
                 #     logger.info("错误：参数不是entity或filler。" + " " + part_name + " " + relation_mention_id)
-                rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context, rel_arg2_window_text = \
+                rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context, \
+                rel_arg2_window_text, rel_arg2_sentence, rel_arg2_sentence_offset = \
                     rel_arg_filler_info(filler_list, rel_arg2_id, rel_arg2_text, sentences)
                 rel_arg2_mention_id = ''
                 rel_arg2_entity_specificity = ''
@@ -332,7 +335,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg1_mention_noun_type': rel_arg1_mention_noun_type,
                 'rel_arg1_mention_offset': rel_arg1_mention_offset,
                 'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context': rel_arg1_context,
-                'rel_arg1_window_text': rel_arg1_window_text,
+                'rel_arg1_window_text': rel_arg1_window_text, 'rel_arg1_sentence': rel_arg1_sentence,
+                'rel_arg1_sentence_offset': rel_arg1_sentence_offset,
                 'rel_arg2_id': rel_arg2_id, 'rel_arg2_mention_id': rel_arg2_mention_id,
                 'rel_arg2_role': rel_arg2_role, 'rel_arg2_text': rel_arg2_text,
                 'rel_arg2_entity_type': rel_arg2_entity_type,
@@ -341,6 +345,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg2_mention_offset': rel_arg2_mention_offset,
                 'rel_arg2_mention_length': rel_arg2_mention_length, 'rel_arg2_context': rel_arg2_context,
                 'rel_arg2_is_filler': rel_arg2_is_filler, 'rel_arg2_window_text': rel_arg2_window_text,
+                'rel_arg2_sentence': rel_arg2_sentence,  'rel_arg2_sentence_offset': rel_arg2_sentence_offset,
                 'trigger_offset': trigger_offset, 'trigger_length': trigger_length, 'trigger_text': trigger_text,
                 'trigger_context': trigger_context,
                 'label_polarity': label_polarity,
@@ -446,7 +451,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                     #                 " " + event_mention_id)
                     label_polarity = st_em[0].getAttribute('polarity')
                     break
-            if with_none == False and label_polarity == 'none':
+            if with_none is False and label_polarity == 'none':
                 break  # 如果为none则丢弃该样本
 
             # trigger
@@ -526,7 +531,7 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 'event_mention_realis': event_mention_realis, 'event_mention_ways': event_mention_ways,
                 'trigger_offset': trigger_offset, 'trigger_length': trigger_length,
                 'trigger_text': trigger_text, 'trigger_context': trigger_context,
-                'trigger_window_text': window_text,
+                'trigger_window_text': window_text, 'trigger_sentence': sen, 'trigger_sentence_offset': sen_offset,
                 'em_arg_num': em_arg_num,
                 'label_polarity': label_polarity,
                 'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
@@ -571,6 +576,7 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
             ere_filepath = ere_dir + ere_filename
             annotation_filepath = annotation_dir + part_name + ".best.xml"
             if os.path.exists(source_filepath) is False:  # 不存在，则是xml
+                # continue
                 prefix_length = len('ENG_DF_000183_20150408_F0000009B')  # 由于给的数据命名不统一，需要这样做
                 # df_prefix_length = len('ENG_DF')
                 # if part_name[:df_prefix_length] != 'ENG_DF':  # 跳过非论坛数据，即新闻数据

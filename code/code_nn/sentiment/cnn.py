@@ -300,11 +300,16 @@ if __name__ == '__main__':
     print 'Test...'
     probabilities = model.predict(x_test)
     y_predict = predict_by_proba(probabilities, 0.1)
+    # 测试文件根据打分过滤掉none的样本
+    # y_predict1 = filter_none(test_files)
+    # # y_predict1 = filter_none_with_window_text(test_files)
+    # y_predict = [y_predict[i] if y_predict1[i] != 0 else y_predict1[i] for i in range(len(y_predict))]
 
     # 评价
     y_test = y_test.tolist()
     print 'Evalution: '
     print 'Test labels: ', y_test
+    # print 'Filter labels:', y_predict1
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 

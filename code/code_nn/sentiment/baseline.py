@@ -5,7 +5,7 @@ from utils.read_file_info_records import *
 from utils.get_labels import get_merged_labels
 from utils.find_source import find_sources
 from utils.write_best import write_best_files
-from utils.evaluation import evaluation_3classes
+from utils.evaluation import evaluation_3classes, evaluation_source
 from utils.file_records_other_modification import to_dict
 from utils.attach_predict_labels import set_neg
 
@@ -47,13 +47,24 @@ if __name__ == '__main__':
     # 修改test_files，全赋neg
     test_files = set_neg(test_files)
 
+    # 全部数据试一下
+    # print
+    # print 'All df data source evaluation:'
+    # df_file_records = to_dict(df_file_records)
+    # df_file_records_dict = find_sources(df_file_records, source_dir, ere_dir)
+    # evaluation_source(df_file_records)
+    # print
+
     # 寻找源
     print 'Find sources... '
     test_files = to_dict(test_files)
     test_files = find_sources(test_files, source_dir, ere_dir)
     # test_files = use_annotation_source(test_files)
     # 加一个找源准确率的评价
+    evaluation_source(test_files)
 
     # 写入文件
     print 'Write into best files...'
     write_best_files(test_files, predict_dir)
+
+

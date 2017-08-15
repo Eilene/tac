@@ -84,6 +84,15 @@ def find_source(offset, length, id, all_source_text, entity_mentions):
     return predict_source
 
 
+def match_by_say(sentence, sentence_offset, offset, entity_mentions):
+    # 找有无say等，有，位置，长度
+    # 找前后，对应句子中offset的范围内的entity，看length、text对不对的上
+    words = ['say', 'said', 'saying', 'think', 'thought', 'wrote', 'write', 'writing', 'written', '"']
+    # 还有引号前后
+
+    return
+
+
 def match(text, offset, length, id):
     if text[offset-len('<quote orig_author="'):offset] == '<quote orig_author="':
         # print id, '   entity in xml: <quote orig_author="', text[offset:offset+length]
