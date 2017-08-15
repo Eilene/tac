@@ -85,12 +85,12 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # 测试结果写入记录
-    test_files = to_dict(test_files)
-    test_files = attach_predict_labels(test_files, y_predict)
+    to_dict(test_files)
+    attach_predict_labels(test_files, y_predict)
 
     # 寻找源
     print 'Find sources... '
-    test_files = find_sources(test_files, source_dir, ere_dir)
+    find_sources(test_files, source_dir, ere_dir)
     # test_files = use_annotation_source(test_files)
 
     # 写入

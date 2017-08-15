@@ -15,7 +15,6 @@ def attach_predict_labels(file_records_dict, y_predict):
                     else:
                         file_records_dict[i][name][j]['predict_polarity'] = 'pos'
                     count += 1
-    return file_records_dict
 
 
 def set_neg(file_records):
@@ -23,7 +22,6 @@ def set_neg(file_records):
         for name in ['entity', 'relation', 'event']:
             if name in file_records[i]:
                 file_records[i][name]['predict_polarity'] = 'neg'
-    return file_records
 
 
 def use_annotation_labels(file_records):
@@ -31,4 +29,3 @@ def use_annotation_labels(file_records):
         for name in ['entity', 'relation', 'event']:
             if name in file_records[i]:
                 file_records[i][name]['predict_polarity'] = file_records[i][name]['label_polarity']
-    return file_records

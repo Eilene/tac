@@ -45,7 +45,7 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # 修改test_files，全赋neg
-    test_files = set_neg(test_files)
+    set_neg(test_files)
 
     # 全部数据试一下
     # print
@@ -57,9 +57,9 @@ if __name__ == '__main__':
 
     # 寻找源
     print 'Find sources... '
-    test_files = to_dict(test_files)
-    test_files = find_sources(test_files, source_dir, ere_dir)
-    # test_files = use_annotation_source(test_files)
+    to_dict(test_files)
+    find_sources(test_files, source_dir, ere_dir)
+    # use_annotation_source(test_files)
     # 加一个找源准确率的评价
     evaluation_source(test_files)
 

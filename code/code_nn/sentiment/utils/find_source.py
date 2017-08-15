@@ -75,8 +75,6 @@ def find_sources(file_records_dict, source_dir, ere_dir):
                     file_records_dict[i]['event'][j]['predict_source_length'] = predict_source['length']
                     file_records_dict[i]['event'][j]['predict_source_text'] = predict_source['text'].decode("utf-8")
 
-    return file_records_dict
-
 
 def find_source(offset, length, id, all_source_text, entity_mentions):
     predict_text_offset, predict_source_text = match(all_source_text, offset, length, id)

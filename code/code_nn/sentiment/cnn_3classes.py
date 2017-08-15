@@ -32,7 +32,7 @@ if __name__ == '__main__':
     total_clip_length = 56
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     print 'Train samples extraction...'
-    x_train = gen_cnn_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_train = gen_matrix_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_train = get_merged_labels(train_files)  # 0,1,2三类
     x_train, y_train = resampling_3classes(x_train, y_train)  # 重采样
     x_train, y_train = convert_samples(x_train, y_train)  # 转换为通道模式
@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # 测试部分
     # 提取特征及标签
     print 'Test samples extraction...'
-    x_test = gen_cnn_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_test = gen_matrix_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_test = get_merged_labels(test_files)  # 0,1,2三类
     x_test, y_test = convert_samples(x_test, y_test)
     # 测试
@@ -59,12 +59,12 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # 测试结果写入记录
-    test_files = to_dict(test_files)
-    test_files = attach_predict_labels(test_files, y_predict)
+    to_dict(test_files)
+    attach_predict_labels(test_files, y_predict)
 
     # 寻找源
     print 'Find sources... '
-    test_files = find_sources(test_files, source_dir, ere_dir)
+    find_sources(test_files, source_dir, ere_dir)
     # test_files = use_annotation_source(test_files)
 
     # 写入

@@ -2,19 +2,19 @@
 
 from sklearn import linear_model
 
-from utils.constants import *
-from utils.read_file_info_records import *
-from utils.file_records_other_modification import to_dict
-from utils.evaluation import evaluation_3classes
+from src.sentiment.features.general_features import gen_general_features
 from utils.attach_predict_labels import attach_predict_labels
+from utils.constants import *
+from utils.evaluation import evaluation_3classes
+from utils.file_records_other_modification import to_dict
 from utils.find_source import find_sources
-from utils.write_best import write_best_files
 from utils.get_labels import get_merged_labels
-from utils.extract_features import gen_vector_features
+from utils.read_file_info_records import *
 from utils.resampling import resampling_3classes
+from utils.write_best import write_best_files
 
 if __name__ == '__main__':
-    mode = True  # True:DF,false:NW
+    mode = False  # True:DF,false:NW
 
     # 读取各文件中间信息
     print 'Read data...'
@@ -37,11 +37,11 @@ if __name__ == '__main__':
         nw_trainnum = int(len(nw_file_records) * portion)
         train_files = df_file_records + nw_file_records[:nw_trainnum]
         test_files = nw_file_records[nw_trainnum:]
+        # 不太好，NW的参数可能得变一变
 
     # 提取特征及标签
     print "Samples extraction..."
-    # x_all = gen_sklearn_features(train_files, test_files)  # 提取特征
-    x_all = gen_vector_features(train_files, test_files)  # 提取特征
+    x_all = gen_general_features(train_files+test_files)  # 提取特征
     y_train = get_merged_labels(train_files)
     y_test = get_merged_labels(test_files)  # 0,1,2三类
     # 特征分割训练测试集
@@ -81,12 +81,12 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # 测试结果写入记录
-    test_files = to_dict(test_files)
-    test_files = attach_predict_labels(test_files, y_predict)
+    to_dict(test_files)
+    attach_predict_labels(test_files, y_predict)
 
     # 寻找源
     print 'Find sources... '
-    test_files = find_sources(test_files, source_dir, ere_dir)
+    find_sources(test_files, source_dir, ere_dir)
     # test_files = use_annotation_source(test_files)
 
     # 写入文件

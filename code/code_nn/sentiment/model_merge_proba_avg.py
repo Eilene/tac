@@ -52,12 +52,12 @@ if __name__ == '__main__':
     total_clip_length = 56
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     print 'Train samples extraction...'
-    train_files = without_none(train_files)  # 训练文件去掉none的样本
+    without_none(train_files)  # 训练文件去掉none的样本
     x_train = gen_cnn_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_train_cnn = [y-1 for y in y_train]  # 改为0,1
     x_train, y_train_cnn = convert_samples(x_train, y_train_cnn)  # 转换为通道模式
     print 'Train...'
-    model = cnn_fit(x_train, y_train_cnn)  # 分正负
+    model = cnn_fit(x_train, y_train_cnn, 2)  # 分正负
     # 测试部分
     # 提取特征及标签
     print 'Test samples extraction...'
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     print 'SVM:'
     # 提取特征
     print "Features extraction..."
-    x_all = gen_sklearn_features(train_files, test_files) # 提取特征
+    x_all = gen_general_features(train_files+test_files)  # 提取特征
     # 特征分割训练测试集
     trainlen = len(y_train)
     x_train = x_all[:trainlen]
@@ -101,13 +101,13 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # 测试结果写入记录
-    test_files = to_dict(test_files)
-    test_files = attach_predict_labels(test_files, y_predict)
+    to_dict(test_files)
+    attach_predict_labels(test_files, y_predict)
 
     # 寻找源
     print 'Find sources... '
-    test_files = find_sources(test_files, source_dir, ere_dir)
-    # test_files = use_annotation_source(test_files)
+    find_sources(test_files, source_dir, ere_dir)
+    # use_annotation_source(test_files)
 
     # 写入文件
     print 'Write into best files...'
