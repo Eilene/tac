@@ -21,17 +21,17 @@ def read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_in
             if os.path.exists(entity_filepath) is True:
                 record['filename'] = part_name
                 entity_info_df = pd.read_csv(entity_filepath)
-                entity_info_df.fillna(0)
+                # entity_info_df.fillna(0)  # 没用？？
                 record['entity'] = entity_info_df
             if os.path.exists(relation_filepath) is True:
                 record['filename'] = part_name
                 relation_info_df = pd.read_csv(relation_filepath)
-                relation_info_df.fillna(0)
+                # relation_info_df.fillna(0)
                 record['relation'] = relation_info_df
             if os.path.exists(event_filepath) is True:
                 record['filename'] = part_name
                 event_info_df = pd.read_csv(event_filepath)
-                event_info_df.fillna(0)
+                # event_info_df.fillna(0)
                 record['event'] = event_info_df
                 if os.path.exists(em_args_filepath) is True:
                     em_args_df = pd.read_csv(em_args_filepath)

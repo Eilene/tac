@@ -5,14 +5,15 @@ from sklearn_svm import *
 from sklearn_regression import *
 from lstm import *
 
-def cnn_process():
+
+def cnn_process(x_train, y_train, x_test, y_test):
     # 训练部分
     # 提取特征及标签
     total_clip_length = 56
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     print 'Train samples extraction...'
     without_none(train_files)  # 训练文件去掉none的样本
-    x_train = gen_cnn_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_train = gen_matrix_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_train_cnn = [y - 1 for y in y_train]  # 改为0,1
     x_train, y_train_cnn = convert_samples(x_train, y_train_cnn)  # 转换为通道模式
     print 'Train...'
@@ -20,7 +21,7 @@ def cnn_process():
     # 测试部分
     # 提取特征及标签
     print 'Test samples extraction...'
-    x_test = gen_cnn_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_test = gen_matrix_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
     x_test, y_test = convert_samples(x_test, y_test)
     y_test = y_test.tolist()
     # 测试
@@ -31,7 +32,7 @@ def cnn_process():
     return y_predict_cnn
 
 
-def svm_process():
+def svm_process(x_train, y_train, x_test, y_test):
     # 训练
     print 'Train...'
     clf = svm.SVC(probability=True)
@@ -46,7 +47,7 @@ def svm_process():
     return y_predict_svm
 
 
-def regression_process():
+def regression_process(x_train, y_train, x_test, y_test):
     # 训练
     print 'Train...'
     # regr = linear_model.LinearRegression(normalize=True)  # 使用线性回归
@@ -56,20 +57,19 @@ def regression_process():
     # 测试
     print 'Test...'
     y_predict_regr = regr.predict(X=x_test)  # 预测
-    print y_predict
-    for i in range(len(y_predict)):
-        if y_predict[i] < 0.7:
-            y_predict[i] = 0
-        elif y_predict[i] < 1.7:
-            y_predict[i] = 1
+    for i in range(len(y_predict_regr)):
+        if y_predict_regr[i] < 0.7:
+            y_predict_regr[i] = 0
+        elif y_predict_regr[i] < 1.7:
+            y_predict_regr[i] = 1
         else:
-            y_predict[i] = 2
+            y_predict_regr[i] = 2
     y_predict_regr = [int(y) for y in y_predict_regr]
 
     return y_predict_regr
 
 
-def lstm_process():
+def lstm_process(x_train, y_train, x_test, y_test):
     x_all, embedding_matrix, nb_words = gen_lstm_features(file_records, embeddings_index)
     # 特征分割训练测试集
     trainlen = len(y_train)
@@ -133,28 +133,31 @@ if __name__ == '__main__':
     x_train = x_all[:trainlen]
     x_test = x_all[trainlen:]
     print 'SVM:'
-    y_predict_svm = svm_process()
+    y_predict_svm = svm_process(x_train, y_train, x_test, y_test)
     print 'Regression:'
-    y_predict_regression = regression_process()
+    y_predict_regression = regression_process(x_train, y_train, x_test, y_test)
 
     # 词向量特征
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     print 'CNN:'
-    y_predict_cnn = cnn_process()
-    print 'Lstm:'
-    y_predict_lstm = lstm_process()
+    y_predict_cnn = cnn_process(x_train, y_train, x_test, y_test)
+    # print 'Lstm:'
+    # y_predict_lstm = lstm_process()
     # y_predict_svm_2levels
     # y_predict_cnn_2levels
     # y_predict_cnn_3classes
 
     y_predict_filter = filter_none(test_files)
 
-
     # 投票，合并
     y_predict = [0] * len(y_test)
     for i in range(len(y_test)):
-        y_candid = [y_predict_svm[i], y_predict_cnn[i], y_predict_regression[i], y_predict_lstm[i], y_predict_filter[i]]
-        y = max(y_candid.count(x) for x in set(y_candid))
+        y_candid = [y_predict_svm[i], y_predict_cnn[i], y_predict_regression[i], y_predict_filter[i]]
+        y_candid = np.asarray(y_candid)
+        counts = np.bincount(y_candid)
+        print counts
+        y = np.argmax(counts)
+        print y
         y_predict[i] = y
 
     # 评价
