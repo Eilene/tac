@@ -222,7 +222,7 @@ def gen_general_features(file_records):
 
 
 if __name__ == '__main__':
-    mode = False  # True:DF,false:NW
+    mode = True  # True:DF,false:NW
 
     # 读取各文件中间信息
     print 'Read data...'
@@ -278,7 +278,7 @@ if __name__ == '__main__':
             y_predict[i] = 0
         elif y_predict[i] < 1.5:
             y_predict[i] = 1
-        elif y_predict[i] < 2.2:  # 较好，还可调
+        elif y_predict[i] < 2.0:  # 较好，还可调
             y_predict[i] = 2
         else:
             y_predict[i] = 3
