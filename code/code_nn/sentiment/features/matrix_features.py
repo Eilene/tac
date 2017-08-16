@@ -1,6 +1,6 @@
 # coding=utf-8
 import nltk
-from nltk import WordNetLemmatizer
+from nltk.stem.wordnet import WordNetLemmatizer
 from keras import backend
 import numpy as np
 

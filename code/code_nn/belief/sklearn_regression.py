@@ -1,8 +1,15 @@
 # coding=utf-8
 
-# 矩阵特征：词向量矩阵，其他
-# 向量特征：tfidf，词性等类别特征（论文指出似乎不太有用），词向量拼接，情感词计数，目标的各种类型特征
-# 在目标、句子、文件等不同层次上提取
+from sklearn import linear_model
+
+from utils.attach_predict_labels import attach_predict_labels
+from utils.constants import *
+from utils.file_records_other_modification import to_dict
+from utils.find_source import find_sources
+from utils.get_labels import get_merged_labels
+from utils.read_file_info_records import *
+from utils.write_best import write_best_files
+from utils.evaluation import evaluation
 
 import nltk
 from pattern.en import lemma
@@ -212,3 +219,88 @@ def gen_general_features(file_records):
     print 'Feature num and dim:', len(features), len(features[0])
 
     return features
+
+
+if __name__ == '__main__':
+    mode = False  # True:DF,false:NW
+
+    # 读取各文件中间信息
+    print 'Read data...'
+    df_file_records, nw_file_records = \
+        read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
+    print 'DF files:', len(df_file_records), ' NW files:', len(nw_file_records)
+
+    # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试
+    if mode is True:
+        print '*** DF ***'
+        print 'Split into train and test dataset...'
+        portion = 0.8
+        trainnum = int(len(df_file_records) * 0.8)
+        train_files = df_file_records[:trainnum]
+        test_files = df_file_records[trainnum:]
+    else:
+        print '*** NW ***'
+        print 'Merge and split into train and test dataset...'
+        portion = 0.2
+        nw_trainnum = int(len(nw_file_records) * portion)
+        train_files = df_file_records + nw_file_records[:nw_trainnum]
+        test_files = nw_file_records[nw_trainnum:]
+        # 不太好，NW的参数可能得变一变
+
+    # 提取特征及标签
+    print "Samples extraction..."
+    x_all = gen_general_features(train_files+test_files)  # 提取特征
+    y_train = get_merged_labels(train_files)
+    y_test = get_merged_labels(test_files)  # 0,1,2三类
+    # 特征分割训练测试集
+    trainlen = len(y_train)
+    x_train = x_all[:trainlen]
+    x_test = x_all[trainlen:]
+    print 'Train data number:', len(y_train)
+    print 'Test data number:', len(y_test)
+    print 'Train labels:', y_train
+    print 'Test labels:', y_test
+
+    # 可重采样，但不能把cb弱化，再看
+
+    # 训练
+    print 'Train...'
+    # regr = linear_model.LinearRegression(normalize=True)  # 使用线性回归
+    regr = linear_model.RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0])
+    regr.fit(x_train, y_train)
+
+    # 测试
+    print 'Test...'
+    y_predict = regr.predict(X=x_test)  # 预测
+    print y_predict
+    for i in range(len(y_predict)):
+        if y_predict[i] < 0.5:
+            y_predict[i] = 0
+        elif y_predict[i] < 1.5:
+            y_predict[i] = 1
+        elif y_predict[i] < 2.2:  # 较好，还可调
+            y_predict[i] = 2
+        else:
+            y_predict[i] = 3
+    y_predict = [int(y) for y in y_predict]
+
+    # 评价
+    print 'Evalution: '
+    print 'Test labels: ', y_test
+    print 'Predict labels: ', y_predict
+    y_test_2c = [0 if y != 3 else 1 for y in y_test]
+    y_predict_2c = [0 if y != 3 else 1 for y in y_predict]
+    evaluation(y_test_2c, y_predict_2c)  # 2类的测试评价
+
+    # 测试结果写入记录
+    to_dict(test_files)
+    attach_predict_labels(test_files, y_predict)
+
+    # 寻找源
+    print 'Find sources... '
+    find_sources(test_files, source_dir, ere_dir)
+    # test_files = use_annotation_source(test_files)
+
+    # 写入文件
+    print 'Write into best files...'
+    write_best_files(test_files, predict_dir)

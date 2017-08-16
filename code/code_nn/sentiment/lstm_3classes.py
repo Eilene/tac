@@ -71,3 +71,4 @@ if __name__ == '__main__':
     # 写入文件
     write_best_files(test_files, predict_dir)
 
+# 还是老训练出现nan
