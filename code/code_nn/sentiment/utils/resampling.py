@@ -88,6 +88,6 @@ def resampling(x, y, samplenum=-1):
             x_new.append(x[neg_index[index]])
             y_new.append(y[neg_index[index]])
             neg += 1
-    print 'pos vs neg', pos, neg
+    print '1 vs 0', pos, neg
 
     return x_new, y_new

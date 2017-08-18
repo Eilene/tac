@@ -7,7 +7,7 @@ source_dir = data_dir + "source/"
 ere_dir = data_dir + "ere/"
 annotation_dir = data_dir + "annotation/"
 
-glove_100d_path = data_prefix + 'glove.6B/glove.6B.100d.txt'
+word2vec_model_path = data_prefix + "blog_word2vec_model_100.txt"
 
 st_output_prefix = data_prefix + 'sentiment_chinese/'
 

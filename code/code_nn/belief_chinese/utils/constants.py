@@ -7,6 +7,8 @@ source_dir = data_dir + "source/"
 ere_dir = data_dir + "ere/"
 annotation_dir = data_dir + "annotation/"
 
+word2vec_model_path = data_prefix + "blog_word2vec_model_100.txt"
+
 be_output_prefix = data_prefix + 'belief_chinese/'
 
 mid_files_dir = be_output_prefix + 'middle_files/'

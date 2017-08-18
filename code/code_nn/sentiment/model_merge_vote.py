@@ -1,8 +1,8 @@
 # coding=utf-8
 
-from cnn import *
-from sklearn_svm import *
-from sklearn_regression import *
+from cnn_fit import *
+from svm_proba_filter import *
+from regression import *
 from lstm import *
 
 

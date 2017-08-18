@@ -1,5 +1,5 @@
 # coding=utf-8
-from cnn import *
+from cnn_fit import *
 from utils.resampling import resampling_3classes
 
 if __name__ == '__main__':
