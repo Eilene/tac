@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from cnn_fit import *
-from svm_proba_filter import *
+from clf_proba_filter import *
 
 
 def compute_average_proba(proba1, proba2):

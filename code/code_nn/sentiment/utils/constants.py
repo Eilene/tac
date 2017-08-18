@@ -18,3 +18,5 @@ event_info_dir = mid_files_dir + 'event_info/'
 em_args_dir = mid_files_dir + 'em_args/'
 
 predict_dir = st_output_prefix + 'predict/'
+
+y_predict_dir = st_output_prefix + 'y_predict/'

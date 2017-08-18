@@ -60,6 +60,13 @@ if __name__ == '__main__':
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
+    # y_predict保存至csv
+    if os.path.exists(y_predict_dir) is False:
+        os.makedirs(y_predict_dir)
+    # 分类器预测的
+    y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
+    y_predict_df.to_csv(y_predict_dir+'lstm_3classes_y_predict.csv', index=False)
+
     # 测试结果写入记录
     to_dict(test_files)
     attach_predict_labels(test_files, y_predict)

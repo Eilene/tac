@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from cnn_fit import *
-from svm_proba_filter import *
+from clf_proba_filter import *
 from regression import *
 from lstm import *
 
