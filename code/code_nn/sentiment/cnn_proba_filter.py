@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from cnn_fit import *
+from utils.filter_none_with_stdict import *
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -50,17 +51,17 @@ if __name__ == '__main__':
     # 测试
     print 'Test...'
     probabilities = model.predict(x_test)
-    y_predict = predict_by_proba(probabilities, 0.1)
+    y_predict_cnn = predict_by_proba_3classes_threshold(probabilities, 0.1)
     # 测试文件根据打分过滤掉none的样本
-    y_predict1 = filter_none(test_files)
-    # y_predict1 = filter_none_with_window_text(test_files)
-    y_predict = [y_predict[i] if y_predict1[i] != 0 else y_predict1[i] for i in range(len(y_predict))]
+    y_predict_filter = filter_none(test_files)
+    y_predict = [y_predict_cnn[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict_cnn))]
 
     # 评价
     y_test = y_test.tolist()
     print 'Evalution: '
     print 'Test labels: ', y_test
-    print 'Filter labels:', y_predict1
+    print 'CNN predict labels: ', y_predict_cnn
+    print 'Filter labels:', y_predict_filter
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     if os.path.exists(y_predict_dir) is False:
         os.makedirs(y_predict_dir)
     # 分类器预测的
-    y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
+    y_predict_df = pd.DataFrame(y_predict_cnn, columns=['y_predict'])
     y_predict_df.to_csv(y_predict_dir+'cnn_y_predict.csv', index=False)
 
     # 测试结果写入记录

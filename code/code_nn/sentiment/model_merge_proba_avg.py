@@ -1,8 +1,9 @@
 # coding=utf-8
 
 from cnn_fit import *
-from clf_proba_filter import *
-
+from sklearn import svm
+from features.general_features import gen_general_features
+from utils.filter_none_with_stdict import filter_none
 
 def compute_average_proba(proba1, proba2):
     proba = []
@@ -37,7 +38,7 @@ if __name__ == '__main__':
 
     # 预处理和提取标签
     print 'Labels extraction...'
-    train_files = without_none(train_files)  # 训练文件去掉none的样本
+    without_none(train_files)  # 训练文件去掉none的样本
     y_train = get_merged_labels(train_files)  # 只有1,2两类
     y_test = get_merged_labels(test_files)  # 0,1,2三类
     print 'Train data number:', len(y_train)
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     print 'Train samples extraction...'
     without_none(train_files)  # 训练文件去掉none的样本
-    x_train = gen_cnn_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_train = gen_matrix_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_train_cnn = [y-1 for y in y_train]  # 改为0,1
     x_train, y_train_cnn = convert_samples(x_train, y_train_cnn)  # 转换为通道模式
     print 'Train...'
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     # 测试部分
     # 提取特征及标签
     print 'Test samples extraction...'
-    x_test = gen_cnn_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_test = gen_matrix_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
     x_test, y_test = convert_samples(x_test, y_test)
     y_test = y_test.tolist()
     # 测试
@@ -81,22 +82,24 @@ if __name__ == '__main__':
     print 'Train...'
     clf = svm.SVC(probability=True)
     clf.fit(x_train, y_train)
-    joblib.dump(clf, 'svm_model.m')  # 保存训练模型
+    # joblib.dump(clf, 'svm_model.m')  # 保存训练模型
     # 测试
     print 'Test...'
-    clf = joblib.load('svm_model.m')
+    # clf = joblib.load('svm_model.m')
     y_proba_svm = clf.predict_proba(x_test)
 
     # 输出概率取平均值
     print 'Take average probabilities of all models: '
     y_proba = compute_average_proba(y_proba_cnn, y_proba_svm)
     print y_proba
-    y_predict = predict_by_proba(y_proba, 0.4)  # 0.5就全0了，0.4还行
+    y_predict = predict_by_proba_3classes_threshold(y_proba, 0.4)  # 0.5就全0了，0.4还行
+    y_predict_filter = filter_none(test_files)
+    y_predict = [y_predict[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict))]
 
     # 评价
     print 'Evalution: '
     print 'Test labels: ', y_test
-    # print 'Filter labels:', y_predict1
+    print 'Filter labels:', y_predict_filter
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 

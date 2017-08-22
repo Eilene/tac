@@ -1,6 +1,8 @@
 # coding=utf-8
-from cnn_fit import *
-from utils.resampling import resampling_3classes
+
+from lstm_fit import *
+from utils.filter_none_with_stdict import filter_none
+
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -27,34 +29,39 @@ if __name__ == '__main__':
         train_files = df_file_records + nw_file_records[:nw_trainnum]
         test_files = nw_file_records[nw_trainnum:]
 
-    # 训练部分
     # 提取特征及标签
-    total_clip_length = 56
+    print "Generate samples..."
     embeddings_index, dim = read_embedding_index(glove_100d_path)
-    print 'Train samples extraction...'
-    x_train = gen_matrix_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
-    y_train = get_merged_labels(train_files)  # 0,1,2三类
-    x_train, y_train = resampling_3classes(x_train, y_train)  # 重采样
-    x_train, y_train = convert_samples(x_train, y_train)  # 转换为通道模式
+    without_none(train_files)  # 训练文件去掉none的样本
+    file_records = train_files + test_files
+    x_all, embedding_matrix, nb_words = gen_lstm_features(file_records, embeddings_index)
+    y_train = get_merged_labels(train_files)  # 只有1,2两类
+    y_train = [y-1 for y in y_train]  # 改为0,1
+    y_test = get_merged_labels(test_files)  # 0,1,2三类
+    # 特征分割训练测试集
+    trainlen = len(y_train)
+    x_train = x_all[:trainlen]
+    x_test = x_all[trainlen:]
+    print 'Train data number:', len(y_train)
+    print 'Test data number:', len(y_test)
+
     # 训练
     print 'Train...'
-    model = cnn_fit(x_train, y_train, 3)  # 分三类
+    model = lstm_fit(x_train, y_train, embedding_matrix, nb_words, 2)
 
-    # 测试部分
-    # 提取特征及标签
-    print 'Test samples extraction...'
-    x_test = gen_matrix_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
-    y_test = get_merged_labels(test_files)  # 0,1,2三类
-    x_test, y_test = convert_samples(x_test, y_test)
     # 测试
     print 'Test...'
     probabilities = model.predict(x_test)
-    y_predict = predict_by_proba(probabilities)
+    y_predict_lstm = predict_by_proba_3classes_threshold(probabilities, 0.2)
+    # 测试文件根据打分过滤掉none的样本
+    y_predict_filter = filter_none(test_files)
+    y_predict = [y_predict_lstm[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict_lstm))]
 
     # 评价
-    y_test = y_test.tolist()
     print 'Evalution: '
     print 'Test labels: ', y_test
+    print 'Lstm predict labels: ', y_predict_lstm
+    print 'Filter labels:', y_predict_filter
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
@@ -62,8 +69,8 @@ if __name__ == '__main__':
     if os.path.exists(y_predict_dir) is False:
         os.makedirs(y_predict_dir)
     # 分类器预测的
-    y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
-    y_predict_df.to_csv(y_predict_dir+'cnn_3classes_y_predict.csv', index=False)
+    y_predict_df = pd.DataFrame(y_predict_lstm, columns=['y_predict'])
+    y_predict_df.to_csv(y_predict_dir+'lstm_y_predict.csv', index=False)
 
     # 测试结果写入记录
     to_dict(test_files)
@@ -73,7 +80,6 @@ if __name__ == '__main__':
     print 'Find sources... '
     find_sources(test_files, source_dir, ere_dir)
 
-    # 写入
-    print 'Write into best files...'
+    # 写入文件
     write_best_files(test_files, predict_dir)
 

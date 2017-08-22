@@ -1,6 +1,6 @@
 # coding=utf-8
 from cnn_fit import *
-from utils.resampling import resampling
+from utils.resampling import resampling_2classes
 
 
 def only_pos_neg(x, y):
@@ -50,8 +50,8 @@ if __name__ == '__main__':
     y_train1 = [1 if y != 0 else 0 for y in y_train]
     x_train2, y_train2 = only_pos_neg(x_train, y_train)
     y_train2 = [y-1 for y in y_train2]
-    x_train1, y_train1 = resampling(x_train, y_train1, len(y_train2) * 2)  # 重采样
-    x_train2, y_train2 = resampling(x_train2, y_train2)  # 重采样
+    x_train1, y_train1 = resampling_2classes(x_train, y_train1, len(y_train2))  # 重采样
+    x_train2, y_train2 = resampling_2classes(x_train2, y_train2)  # 重采样
     x_train1, y_train1 = convert_samples(x_train1, y_train1)  # 转换为通道模式
     x_train2, y_train2 = convert_samples(x_train2, y_train2)  # 转换为通道模式
     # 训练
@@ -70,9 +70,9 @@ if __name__ == '__main__':
     # 测试
     print 'Test...'
     probabilities1 = model1.predict(x_test)
-    y_predict1 = predict_by_proba(probabilities1, 0.0)
+    y_predict1 = predict_by_proba(probabilities1)
     probabilities2 = model1.predict(x_test)
-    y_predict2 = predict_by_proba(probabilities2, 0.0)
+    y_predict2 = predict_by_proba_3classes_threshold(probabilities2, 0.0)
     y_predict = [y_predict2[i] if y_predict1[i] != 0 else 0 for i in range(len(y_predict1))]
 
     # 评价
@@ -98,7 +98,6 @@ if __name__ == '__main__':
     # 寻找源
     print 'Find sources... '
     find_sources(test_files, source_dir, ere_dir)
-    # test_files = use_annotation_source(test_files)
 
     # 写入
     print 'Write into best files...'

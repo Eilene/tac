@@ -1,9 +1,9 @@
 # coding=utf-8
 
 
-def predict_by_proba(proba, threshold):
+def predict_by_proba_3classes_threshold(probas, threshold):
     y_pred = []
-    for p in proba:
+    for p in probas:
         if p[1] - p[0] > threshold:
             y_pred.append(2)
         elif p[0] - p[1] > threshold:
@@ -13,8 +13,8 @@ def predict_by_proba(proba, threshold):
     return y_pred
 
 
-def predict_by_proba_nothreshold(proba):
+def predict_by_proba(probas):
     y_pred = []
-    for p in proba:
+    for p in probas:
             y_pred.append(p.tolist().index(max(p)))
     return y_pred

@@ -3,7 +3,8 @@
 import random
 
 
-def resampling_3classes(x, y, samplenum=-1):
+# 标签0,1,2
+def resampling_3classes(x, y, pos_samplenum=-1, neg_samplenum=-1, none_samplenum=-1):
     x_new = []
     y_new = []
 
@@ -27,19 +28,24 @@ def resampling_3classes(x, y, samplenum=-1):
     pos_num = len(pos_index)
     neg_num = len(neg_index)
     none_num = len(none_index)
-    print pos_num, neg_num, none_num
+    print 'Before resampling pos vs neg vs none:', pos_num, neg_num, none_num
 
-    if samplenum == -1:  # 使用默认值
-        samplenum = int(neg_num * 3)  # 这个看着调
+    if pos_samplenum == -1:  # 使用默认值
+        pos_samplenum = neg_num
+    if neg_samplenum == -1:
+        neg_samplenum = pos_samplenum
+    if none_samplenum == -1:
+        none_samplenum = pos_samplenum
 
+    samplenum = pos_samplenum + neg_samplenum + none_samplenum
     for i in range(samplenum):
-        flag = random.randint(1, 3)
-        if flag == 2:
+        flag = random.randint(1, samplenum)
+        if flag <= pos_samplenum:
             index = random.randint(0, pos_num-1)
             x_new.append(x[pos_index[index]])
             y_new.append(y[pos_index[index]])
             pos += 1
-        elif flag == 1:
+        elif flag <= pos_samplenum + neg_samplenum:
             index = random.randint(0, neg_num-1)
             x_new.append(x[neg_index[index]])
             y_new.append(y[neg_index[index]])
@@ -49,13 +55,13 @@ def resampling_3classes(x, y, samplenum=-1):
             x_new.append(x[none_index[index]])
             y_new.append(y[none_index[index]])
             none += 1
-    print 'pos vs neg vs none', pos, neg, none
+    print 'After resampling pos vs neg vs none', pos, neg, none
 
     return x_new, y_new
 
 
-# 二类，采样
-def resampling(x, y, samplenum=-1):
+# 二类，采样，标签需1,0
+def resampling_2classes(x, y, pos_samplenum=-1, neg_samplenum=-1):
     x_new = []
     y_new = []
 
@@ -74,11 +80,17 @@ def resampling(x, y, samplenum=-1):
     neg = 0
     pos_num = len(pos_index)
     neg_num = len(neg_index)
-    if samplenum == -1:  # 使用默认值
-        samplenum = int(pos_num + neg_num)
+    print 'Before resampling 1 vs 0', pos_num, neg_num
+
+    if pos_samplenum == -1:  # 使用默认值
+        pos_samplenum = int((pos_num + neg_num)/2)
+    if neg_samplenum == -1:  # 使用默认值
+        neg_samplenum = pos_samplenum
+
+    samplenum = pos_samplenum + neg_samplenum
     for i in range(samplenum):
-        flag = random.randint(1, 2)
-        if flag == 1:
+        flag = random.randint(1, samplenum)
+        if flag <= pos_samplenum:
             index = random.randint(0, pos_num-1)
             x_new.append(x[pos_index[index]])
             y_new.append(y[pos_index[index]])
@@ -88,6 +100,6 @@ def resampling(x, y, samplenum=-1):
             x_new.append(x[neg_index[index]])
             y_new.append(y[neg_index[index]])
             neg += 1
-    print '1 vs 0', pos, neg
+    print 'After resampling 1 vs 0', pos, neg
 
     return x_new, y_new

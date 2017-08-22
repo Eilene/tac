@@ -1,20 +1,19 @@
 # coding=utf-8
 
-from sklearn import svm
-from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
+from sklearn.linear_model import LogisticRegression
 
-from utils.constants import *
-from utils.read_file_info_records import *
 from features.general_features import gen_general_features
-from utils.get_labels import get_merged_labels
-from utils.resampling import resampling
 from utils.attach_predict_labels import attach_predict_labels
+from utils.constants import *
 from utils.evaluation import evaluation_3classes
 from utils.file_records_other_modification import to_dict
-from utils.find_source import find_sources
+from utils.get_labels import get_merged_labels
 from utils.predict_by_proba import *
+from utils.read_file_info_records import *
+from utils.resampling import resampling_2classes
 from utils.write_best import write_best_files
+from utils.find_source import find_sources
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -67,36 +66,30 @@ if __name__ == '__main__':
     print "Resampling..."
     negnum = y_train2.count(1)
     posnum = y_train3.count(1)
-    x_train1, y_train1 = resampling(x_train, y_train1, (negnum+posnum)*3)
-    x_train2, y_train2 = resampling(x_train, y_train2, negnum*3)
-    x_train3, y_train3 = resampling(x_train, y_train3, posnum*3)
+    x_train1, y_train1 = resampling_2classes(x_train, y_train1, negnum+posnum)  # 参数填一个，后面默认1:1
+    x_train2, y_train2 = resampling_2classes(x_train, y_train2, negnum)
+    x_train3, y_train3 = resampling_2classes(x_train, y_train3, posnum)
 
     # 训练
     print 'Train...'
     clf1 = LogisticRegression()
     # clf1 = svm.SVC(probability=True)
     clf1.fit(x_train1, y_train1)
-    joblib.dump(clf1, '1vsothers_clf_model1.m')  # 保存训练模型
     clf2 = LogisticRegression()
     # clf2 = svm.SVC(probability=True)
     clf2.fit(x_train2, y_train2)
-    joblib.dump(clf2, '1vsothers_clf_model2.m')  # 保存训练模型
     clf3 = LogisticRegression()
     # clf3 = svm.SVC(probability=True)
     clf3.fit(x_train3, y_train3)
-    joblib.dump(clf3, '1vsothers_clf_model3.m')  # 保存训练模型
-    
+
     # 测试
     print 'Test...'
-    clf1 = joblib.load('1vsothers_clf_model1.m')
     y_pred_proba1 = clf1.predict_proba(x_test)
-    y_predict1 = predict_by_proba_nothreshold(y_pred_proba1)
-    clf2 = joblib.load('1vsothers_clf_model2.m')
+    y_predict1 = predict_by_proba(y_pred_proba1)
     y_pred_proba2 = clf2.predict_proba(x_test)
-    y_predict2 = predict_by_proba_nothreshold(y_pred_proba2)
-    clf3 = joblib.load('1vsothers_clf_model3.m')
+    y_predict2 = predict_by_proba(y_pred_proba2)
     y_pred_proba3 = clf3.predict_proba(x_test)
-    y_predict3 = predict_by_proba_nothreshold(y_pred_proba3)
+    y_predict3 = predict_by_proba(y_pred_proba3)
 
     # 生成最终y_predict
     # 每个样本，若只有1个1，则对应该类；多个或0个，则概率最大类别为输入类别（按理说应该用输出值。。）
@@ -133,7 +126,6 @@ if __name__ == '__main__':
     # 寻找源
     print 'Find sources... '
     find_sources(test_files, source_dir, ere_dir)
-    # test_files = use_annotation_source(test_files)
 
     # 写入文件
     print 'Write into best files...'

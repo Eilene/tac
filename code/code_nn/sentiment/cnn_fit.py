@@ -5,12 +5,10 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.layers.core import Dense, Dropout, Flatten
 from keras.models import Sequential
 
+
 from utils.evaluation import evaluation_3classes
-from utils.filter_none_with_stdict import *
 from utils.find_source import find_sources
-from utils.read_embedding_index import *
 from utils.read_file_info_records import *
-# from utils.resampling import *
 from utils.write_best import write_best_files
 from utils.constants import *
 from utils.file_records_other_modification import without_none, to_dict
@@ -18,6 +16,7 @@ from utils.get_labels import get_merged_labels
 from utils.predict_by_proba import *
 from utils.attach_predict_labels import *
 from features.matrix_features import gen_matrix_features, convert_samples
+from utils.read_embedding_index import *
 
 
 def cnn_fit(x_train, y_train, classnum):

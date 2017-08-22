@@ -7,11 +7,11 @@ from utils.attach_predict_labels import attach_predict_labels
 from utils.constants import *
 from utils.evaluation import evaluation_3classes
 from utils.file_records_other_modification import to_dict
-from utils.find_source import find_sources
 from utils.get_labels import get_merged_labels
 from utils.read_file_info_records import *
 from utils.resampling import resampling_3classes
 from utils.write_best import write_best_files
+from 历史备份.find_source import find_sources
 
 if __name__ == '__main__':
     mode = False  # True:DF,false:NW
@@ -87,7 +87,6 @@ if __name__ == '__main__':
     # 寻找源
     print 'Find sources... '
     find_sources(test_files, source_dir, ere_dir)
-    # test_files = use_annotation_source(test_files)
 
     # 写入文件
     print 'Write into best files...'

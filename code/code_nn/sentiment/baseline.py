@@ -1,14 +1,13 @@
 # coding=utf-8
 
+from utils.attach_predict_labels import set_neg
 from utils.constants import *
-from utils.read_file_info_records import *
-from utils.get_labels import get_merged_labels
-from utils.find_source import find_sources
-from utils.write_best import write_best_files
 from utils.evaluation import evaluation_3classes, evaluation_source
 from utils.file_records_other_modification import to_dict
-from utils.attach_predict_labels import set_neg
-
+from utils.get_labels import get_merged_labels
+from utils.read_file_info_records import *
+from utils.write_best import write_best_files
+from utils.find_source import find_sources
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -17,6 +16,7 @@ if __name__ == '__main__':
     print 'Read data...'
     df_file_records, nw_file_records = \
         read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
+    # print df_file_records
     print 'DF files:', len(df_file_records), ' NW files:', len(nw_file_records)
 
     # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试

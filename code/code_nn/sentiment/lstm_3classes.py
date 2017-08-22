@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from lstm import *
+from lstm_fit import *
 from utils.resampling import resampling_3classes
 
 if __name__ == '__main__':
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # 测试
     print 'Test...'
     probabilities = model.predict(x_test)
-    y_predict = predict_by_proba(probabilities, 0.2)
+    y_predict = predict_by_proba(probabilities)
 
     # 评价
     print 'Evalution: '

@@ -1,20 +1,20 @@
 # coding=utf-8
 
 from sklearn import svm
-from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
+from sklearn.linear_model import LogisticRegression
 
 from features.general_features import gen_general_features
 from utils.attach_predict_labels import attach_predict_labels
 from utils.constants import *
 from utils.evaluation import evaluation_3classes
 from utils.file_records_other_modification import without_none, to_dict
-from utils.find_source import find_sources
+from utils.filter_none_with_stdict import filter_none
 from utils.get_labels import get_merged_labels
 from utils.predict_by_proba import *
 from utils.read_file_info_records import *
 from utils.write_best import write_best_files
-from utils.filter_none_with_stdict import filter_none
+from 历史备份.find_source import find_sources
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -65,21 +65,22 @@ if __name__ == '__main__':
     else:
         clf = LogisticRegression()
     clf.fit(x_train, y_train)
-    joblib.dump(clf, clf_name+'_model.m')  # 保存训练模型
+    # joblib.dump(clf, clf_name+'_model.m')  # 保存训练模型
 
     # 测试
     print 'Test...'
-    clf = joblib.load(clf_name+'_model.m')
+    # clf = joblib.load(clf_name+'_model.m')
     y_pred_proba = clf.predict_proba(x_test)
-    y_predict = predict_by_proba(y_pred_proba, 0.3)
+    y_predict_clf = predict_by_proba_3classes_threshold(y_pred_proba, 0.3)
     # 测试文件根据打分过滤掉none的样本
-    y_predict1 = filter_none(test_files)
-    # y_predict = [y_predict[i] if y_predict1[i] != 0 else y_predict1[i] for i in range(len(y_predict))]
+    y_predict_filter = filter_none(test_files)
+    y_predict = [y_predict_clf[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict_clf))]
 
     # 评价
     print 'Evalution: '
     print 'Test labels: ', y_test
-    # print 'Filter labels:', y_predict1
+    print 'Clf predict labels: ', y_predict_clf
+    print 'Filter labels:', y_predict_filter
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
@@ -87,10 +88,10 @@ if __name__ == '__main__':
     if os.path.exists(y_predict_dir) is False:
         os.makedirs(y_predict_dir)
     # 分类器预测的
-    y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
+    y_predict_df = pd.DataFrame(y_predict_clf, columns=['y_predict'])
     y_predict_df.to_csv(y_predict_dir+clf_name+'_y_predict.csv', index=False)
     # 词典过滤的
-    y_predict1_df = pd.DataFrame(y_predict1, columns=['y_predict'])
+    y_predict1_df = pd.DataFrame(y_predict_filter, columns=['y_predict'])
     y_predict1_df.to_csv(y_predict_dir + 'filter_y_predict.csv', index=False)
 
     # 测试结果写入记录

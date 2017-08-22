@@ -1,21 +1,19 @@
 # coding=utf-8
 
+import numpy as np
 from sklearn import svm
 from sklearn.externals import joblib
 
-from utils.constants import *
-from utils.read_file_info_records import *
 from features.general_features import gen_general_features
-from utils.get_labels import get_merged_labels
-from utils.resampling import resampling
-
 from utils.attach_predict_labels import attach_predict_labels
+from utils.constants import *
 from utils.evaluation import evaluation_3classes
 from utils.file_records_other_modification import to_dict
-from utils.find_source import find_sources
+from utils.get_labels import get_merged_labels
+from utils.read_file_info_records import *
+from utils.resampling import resampling_2classes
 from utils.write_best import write_best_files
-
-import numpy as np
+from utils.find_source import find_sources
 
 
 def only_two_classes(x, y, label):
@@ -81,32 +79,26 @@ if __name__ == '__main__':
     negnum = y_train3.count(1)
     posnum = y_train3.count(2)
     print posnum
-    x_train1, y_train1 = resampling(x_train1, y_train1, negnum*2)
+    x_train1, y_train1 = resampling_2classes(x_train1, y_train1, negnum, negnum)
     y_train2 = [1 if y == 2 else 0 for y in y_train2]  # 调整下，用于采样（后续在改改采样接口吧）
-    x_train2, y_train2 = resampling(x_train2, y_train2, posnum*2)
+    x_train2, y_train2 = resampling_2classes(x_train2, y_train2, posnum, posnum)
     print y_train2
     y_train3 = [1 if y == 2 else 0 for y in y_train3]
-    x_train3, y_train3 = resampling(x_train3, y_train3, posnum+negnum)
+    x_train3, y_train3 = resampling_2classes(x_train3, y_train3)
 
     # 训练
     print 'Train...'
     clf1 = svm.SVC()
     clf1.fit(x_train1, y_train1)
-    joblib.dump(clf1, '1vs1_svm_model1.m')  # 保存训练模型
     clf2 = svm.SVC()
     clf2.fit(x_train2, y_train2)
-    joblib.dump(clf2, '1vs1_svm_model2.m')  # 保存训练模型
     clf3 = svm.SVC()
     clf3.fit(x_train3, y_train3)
-    joblib.dump(clf3, '1vs1_svm_model3.m')  # 保存训练模型
-    
+
     # 测试
     print 'Test...'
-    clf1 = joblib.load('1vs1_svm_model1.m')
     y_predict1 = clf1.predict(x_test)
-    clf2 = joblib.load('1vs1_svm_model2.m')
     y_predict2 = clf2.predict(x_test)
-    clf3 = joblib.load('1vs1_svm_model3.m')
     y_predict3 = clf3.predict(x_test)
     y_predict2 = [2 if y == 1 else 0 for y in y_predict2]  # 调整回来
     y_predict3 = [2 if y == 1 else 1 for y in y_predict3]  # 调整回来

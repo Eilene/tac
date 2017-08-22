@@ -49,11 +49,18 @@ def evaluation_source(file_records_dict):
                                 (('predict_source_id' in r) and (r['predict_source_id'] == r['source_id'])):
                             right_count += 1
                         # else:
-                        #     print fr['filename']
+                        #     print fr['filename'], r[name+'_mention_id']
                         #     print 'actual source:', r['source_id'], r['source_offset'], r['source_length'], r['source_text']
                         #     if 'predict_source_id' in r:
                         #         print 'predict source:', r['predict_source_id'], r['predict_source_offset'], \
                         #             r['predict_source_length'], r['predict_source_text']
+                            # 错误情况及其他情况：
+                            # 1.不对啊，有的明显是作者观点官方却标的无source；有的是belief有源，对应sentiment没有
+                            # 2.saying，可只找say前接着的即可；主要都是这个错
+                                # he genuinely was looking for a companion这种怎么办？
+                                # The St. Louis Rams fired coach Steve Spagnuolo
+                            # 3.quote的在原post中：不多
+                            # 无作者quote，会用句中I作为source
     accuracy = float(right_count) / float(count)
     print 'Total, right and wrong number of source finding: ', count, right_count, count - right_count
     print 'Accuracy of find source:', accuracy
