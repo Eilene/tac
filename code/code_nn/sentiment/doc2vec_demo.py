@@ -8,7 +8,7 @@ import os
 from gensim.models.doc2vec import Doc2Vec,LabeledSentence
 from sklearn.model_selection import train_test_split
 
-LabeledSentence = gensim.models.doc2vec.LabeledSentence
+TaggedDocument = gensim.models.doc2vec.TaggedDocument
 
 from src.sentiment.utils.constants import data_prefix
 
@@ -75,7 +75,7 @@ def get_dataset():
         labelized = []
         for i,v in enumerate(reviews):
             label = '%s_%s'%(label_type,i)
-            labelized.append(LabeledSentence(v, [label]))
+            labelized.append(TaggedDocument(v, [label]))
         return labelized
 
     x_train = labelizeReviews(x_train, 'TRAIN')
@@ -94,12 +94,14 @@ def getVecs(model, corpus, size):
 ##对数据进行训练
 def train(x_train,x_test,unsup_reviews,size = 400,epoch_num=10):
     #实例DM和DBOW模型
-    model_dm = gensim.models.Doc2Vec(min_count=1, window=10, size=size, sample=1e-3, negative=5, workers=3)
-    model_dbow = gensim.models.Doc2Vec(min_count=1, window=10, size=size, sample=1e-3, negative=5, dm=0, workers=3)
+    model_dm = gensim.models.Doc2Vec(np.concatenate((x_train, x_test, unsup_reviews)),
+                                                    min_count=1, size=size, workers=3)
+    model_dbow = gensim.models.Doc2Vec(np.concatenate((x_train, x_test, unsup_reviews)),
+                                       min_count=1, window=10, size=size, sample=1e-3, negative=5, dm=0, workers=3)
 
     #使用所有的数据建立词典
-    model_dm.build_vocab(np.concatenate((x_train, x_test, unsup_reviews)))
-    model_dbow.build_vocab(np.concatenate((x_train, x_test, unsup_reviews)))
+    # model_dm.build_vocab(np.concatenate((x_train, x_test, unsup_reviews)))
+    # model_dbow.build_vocab(np.concatenate((x_train, x_test, unsup_reviews)))
 
     #进行多次重复训练，每一次都需要对训练数据重新打乱，以提高精度
     all_train_reviews = np.concatenate((x_train, unsup_reviews))

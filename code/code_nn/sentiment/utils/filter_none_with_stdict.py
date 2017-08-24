@@ -47,7 +47,7 @@ def filter_none(file_records):
     for i in range(len(file_records)):
         if 'entity' in file_records[i]:
             # 取上下文
-            contexts = file_records[i]['entity']['entity_mention_context']
+            contexts = file_records[i]['entity']['entity_mention_context7']
             # 打分
             scores = context_scoring(contexts)
             # 根据分给一份predict
@@ -55,11 +55,11 @@ def filter_none(file_records):
             pred.extend(p)
         if 'relation' in file_records[i]:
             # 取上下文
-            rel_arg1_contexts = file_records[i]['relation']['rel_arg1_context']
-            rel_arg2_contexts = file_records[i]['relation']['rel_arg2_context']
+            rel_arg1_contexts = file_records[i]['relation']['rel_arg1_context7']
+            rel_arg2_contexts = file_records[i]['relation']['rel_arg2_context7']
             contexts = []
             for j in range(len(rel_arg1_contexts)):
-                context = rel_arg1_contexts[j] + ' ' + rel_arg2_contexts[j]
+                context = str(rel_arg1_contexts[j]) + ' ' + str(rel_arg2_contexts[j])
                 contexts.append(context)
             # 打分
             scores = context_scoring(contexts)
@@ -68,7 +68,7 @@ def filter_none(file_records):
             pred.extend(p)
         if 'event' in file_records[i]:
             # 取上下文
-            contexts = file_records[i]['event']['trigger_context']
+            contexts = file_records[i]['event']['trigger_context7']
             # 打分
             scores = context_scoring(contexts)
             # 根据分给一份predict

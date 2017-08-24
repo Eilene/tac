@@ -57,11 +57,12 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
     ere_root = ere_file.documentElement
     entity_list = ere_root.getElementsByTagName('entity')
 
-    annotation_file = xml.dom.minidom.parse(annotation_filepath)
-    annotation_root = annotation_file.documentElement
-    annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
-    annotation_sentiment_list = annotation_sentiment_list[0]
-    annotation_entity_list = annotation_sentiment_list.getElementsByTagName('entity')  # 实际上是entity mention
+    if annotation_filepath != '':
+        annotation_file = xml.dom.minidom.parse(annotation_filepath)
+        annotation_root = annotation_file.documentElement
+        annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
+        annotation_sentiment_list = annotation_sentiment_list[0]
+        annotation_entity_list = annotation_sentiment_list.getElementsByTagName('entity')  # 实际上是entity mention
 
     for i in range(len(entity_list)):
         # entity信息
@@ -82,15 +83,16 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
             text_text = text.firstChild.data
 
             # 上下文信息
-            above = 3
-            below = 3
-            context_dict = find_context(entity_mention_offset, sentences, text_text, above, below)
+            context_dict = find_context(entity_mention_offset, sentences, text_text, 3, 3)
             # print context_dict
             if context_dict is None:  # 说明应该是在标签中出现的源（但是好像有遗漏）
                 # print part_name, entity_mention_id, text_text
                 continue
             # 拼成一个字符串
-            context = context_dict_to_string(context_dict, above, below)
+            context7 = context_dict_to_string(context_dict, 3, 3)  # 7句
+            context5 = context_dict_to_string(context_dict, 2, 2)  # 5句
+            context3 = context_dict_to_string(context_dict, 1, 1)  # 3句
+            context1 = context_dict_to_string(context_dict, 0, 0)  # 1句
 
             # 从上下文中进一步提取窗口词
             window_length = 10
@@ -98,45 +100,53 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
             sen_offset = context_dict[0]['offset']
             window_text = get_window_text(window_length, sen, sen_offset, text_text, entity_mention_offset)
 
-            # polarity
-            for k in range((len(annotation_entity_list))):
-                annotation_entity_id = annotation_entity_list[k].getAttribute('ere_id')
-                if annotation_entity_id == entity_mention_id:
-                    st_em = annotation_entity_list[k].getElementsByTagName('sentiment')
-                    # if len(st_em) == 0:
-                    #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_relation_id +
-                    #                 " " + relation_mention_id)
-                    label_polarity = st_em[0].getAttribute('polarity')
-                    break
-            if with_none is False and label_polarity == 'none':
-                break  # 如果为none则丢弃该样本
+            if annotation_filepath != '':
+                # polarity
+                for k in range((len(annotation_entity_list))):
+                    annotation_entity_id = annotation_entity_list[k].getAttribute('ere_id')
+                    if annotation_entity_id == entity_mention_id:
+                        st_em = annotation_entity_list[k].getElementsByTagName('sentiment')
+                        # if len(st_em) == 0:
+                        #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_relation_id +
+                        #                 " " + relation_mention_id)
+                        label_polarity = st_em[0].getAttribute('polarity')
+                        break
+                if with_none is False and label_polarity == 'none':
+                    break  # 如果为none则丢弃该样本
 
-            # actual source
-            source = st_em[0].getElementsByTagName('source')
-            if label_polarity == 'none' or len(source) == 0:
-                source_id = ''
-                source_offset = 0
-                source_length = 0
-                source_text = ''
-                # if len(source) == 0:
-                #     print part_name, label_polarity, entity_mention_id
-            else:
-                source = source[0]
-                source_id = source.getAttribute('ere_id')
-                source_offset = int(source.getAttribute('offset'))
-                source_length = int(source.getAttribute('length'))
-                source_text = source.firstChild.data
+                # actual source
+                source = st_em[0].getElementsByTagName('source')
+                if label_polarity == 'none' or len(source) == 0:
+                    source_id = ''
+                    source_offset = 0
+                    source_length = 0
+                    source_text = ''
+                    # if len(source) == 0:
+                    #     print part_name, label_polarity, entity_mention_id
+                else:
+                    source = source[0]
+                    source_id = source.getAttribute('ere_id')
+                    source_offset = int(source.getAttribute('offset'))
+                    source_length = int(source.getAttribute('length'))
+                    source_text = source.firstChild.data
 
             entity_record = {
                 'entity_id': entity_id, 'entity_type': entity_type, 'entity_specificity': entity_specificity,
                 'entity_mention_id': entity_mention_id, 'entity_mention_noun_type': entity_mention_noun_type,
                 'entity_mention_offset': entity_mention_offset, 'entity_mention_length': entity_mention_length,
-                'entity_mention_text': text_text, 'entity_mention_context': context, 'window_text': window_text,
+                'entity_mention_text': text_text, 'entity_mention_context7': context7,
+                'entity_mention_context5': context5, 'entity_mention_context3': context3,
+                'entity_mention_context1': context1, 'window_text': window_text,
                 'entity_mention_sentence': sen, 'entity_mention_sentence_offset': sen_offset,
-                'file': part_name, 'label_polarity': label_polarity,
-                'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
-                'source_text': source_text
+                'file': part_name
             }
+
+            if annotation_filepath != '':
+                entity_record['label_polarity'] = label_polarity
+                entity_record['source_id'] = source_id
+                entity_record['source_offset'] = source_offset
+                entity_record['source_length'] = source_length
+                entity_record['source_text'] = source_text
 
             entity_records_each_file.append(entity_record)
 
@@ -159,12 +169,13 @@ def rel_arg_entity_info(entity_list, rel_arg_id, rel_arg_mention_id, rel_arg_tex
                     rel_arg_mention_offset = int(entity_mention_list[m].getAttribute('offset'))
                     rel_arg_mention_length = int(entity_mention_list[m].getAttribute('length'))
                     # 上下文信息
-                    above = 3
-                    below = 3
                     rel_arg_context_dict = find_context(rel_arg_mention_offset, sentences,
-                                                         rel_arg_text, above, below)
+                                                         rel_arg_text, 3, 3)
                     # 拼成一个字符串
-                    rel_arg_context = context_dict_to_string(rel_arg_context_dict, above, below)
+                    rel_arg_context7 = context_dict_to_string(rel_arg_context_dict, 3, 3)
+                    rel_arg_context5 = context_dict_to_string(rel_arg_context_dict, 2, 2)
+                    rel_arg_context3 = context_dict_to_string(rel_arg_context_dict, 1, 1)
+                    rel_arg_context1 = context_dict_to_string(rel_arg_context_dict, 0, 0)
                     # if rel_arg_context == '':
                     #     print rel_arg_text, rel_arg_id, part_name, rel_arg_context
                     # 从上下文中进一步提取窗口词
@@ -173,7 +184,8 @@ def rel_arg_entity_info(entity_list, rel_arg_id, rel_arg_mention_id, rel_arg_tex
                     sen_offset = rel_arg_context_dict[0]['offset']
                     window_text = get_window_text(window_length, sen, sen_offset, rel_arg_text, rel_arg_mention_offset)
                     return rel_arg_entity_type, rel_arg_entity_specificity, rel_arg_mention_noun_type, \
-                           rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text, sen, sen_offset
+                           rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context7, rel_arg_context5, \
+                           rel_arg_context3, rel_arg_context1, window_text, sen, sen_offset
 
 
 # rel_arg的所属filler信息
@@ -191,7 +203,11 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
             rel_arg_context_dict = find_context(rel_arg_mention_offset, sentences,
                                                  rel_arg_text, above, below)
             # 拼成一个字符串
-            rel_arg_context = context_dict_to_string(rel_arg_context_dict, above, below)
+            rel_arg_context7 = context_dict_to_string(rel_arg_context_dict, above, below)  # 7句
+            rel_arg_context5 = context_dict_to_string(rel_arg_context_dict, above, below)  # 5句
+            rel_arg_context3 = context_dict_to_string(rel_arg_context_dict, above, below)  # 3句
+            rel_arg_context1 = context_dict_to_string(rel_arg_context_dict, above, below)  # 1句
+
             # if rel_arg_context == '':
             #     print rel_arg_text, rel_arg_id, part_name, rel_arg_context
             # 从上下文中进一步提取窗口词
@@ -204,7 +220,8 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
                 window_text = ''
                 sen = ''
                 sen_offset = 0
-            return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context, window_text, \
+            return rel_arg_filler_type, rel_arg_mention_offset, rel_arg_mention_length, rel_arg_context7, \
+                   rel_arg_context5, rel_arg_context3, rel_arg_context1, window_text, \
                    sen, sen_offset
 
 
@@ -222,11 +239,12 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
     entity_list = ere_root.getElementsByTagName('entity')
     filler_list = ere_root.getElementsByTagName('filler')
 
-    annotation_file = xml.dom.minidom.parse(annotation_filepath)
-    annotation_root = annotation_file.documentElement
-    annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
-    annotation_sentiment_list = annotation_sentiment_list[0]
-    annotation_relation_list = annotation_sentiment_list.getElementsByTagName('relation')  # 实际上是relation_mention
+    if annotation_filepath != '':
+        annotation_file = xml.dom.minidom.parse(annotation_filepath)
+        annotation_root = annotation_file.documentElement
+        annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
+        annotation_sentiment_list = annotation_sentiment_list[0]
+        annotation_relation_list = annotation_sentiment_list.getElementsByTagName('relation')  # 实际上是relation_mention
 
     for i in range(len(relation_list)):
         # relation信息
@@ -240,18 +258,19 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
             relation_mention_id = relation_mention_list[j].getAttribute('id')
             relation_mention_realis = relation_mention_list[j].getAttribute('realis')
 
-            # polarity
-            for k in range((len(annotation_relation_list))):
-                annotation_relation_id = annotation_relation_list[k].getAttribute('ere_id')
-                if annotation_relation_id == relation_mention_id:
-                    st_em = annotation_relation_list[k].getElementsByTagName('sentiment')
-                    # if len(st_em) == 0:
-                    #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_relation_id +
-                    #                 " " + relation_mention_id)
-                    label_polarity = st_em[0].getAttribute('polarity')
-                    break
-            if with_none == False and label_polarity == 'none':
-                break  # 如果为none则丢弃该样本
+            if annotation_filepath != '':
+                # polarity
+                for k in range((len(annotation_relation_list))):
+                    annotation_relation_id = annotation_relation_list[k].getAttribute('ere_id')
+                    if annotation_relation_id == relation_mention_id:
+                        st_em = annotation_relation_list[k].getElementsByTagName('sentiment')
+                        # if len(st_em) == 0:
+                        #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_relation_id +
+                        #                 " " + relation_mention_id)
+                        label_polarity = st_em[0].getAttribute('polarity')
+                        break
+                if with_none == False and label_polarity == 'none':
+                    break  # 如果为none则丢弃该样本
 
             # rel_arg是entity
             # 基本信息
@@ -263,7 +282,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
             rel_arg1_text = rel_arg1.firstChild.data
             # 所属entity及entity mention信息
             rel_arg1_entity_type, rel_arg1_entity_specificity, rel_arg1_mention_noun_type, rel_arg1_mention_offset, \
-            rel_arg1_mention_length, rel_arg1_context, rel_arg1_window_text, rel_arg1_sentence, rel_arg1_sentence_offset\
+            rel_arg1_mention_length, rel_arg1_context7, rel_arg1_context5, \
+                           rel_arg1_context3, rel_arg1_context1, rel_arg1_window_text, rel_arg1_sentence, rel_arg1_sentence_offset\
                 = rel_arg_entity_info(entity_list, rel_arg1_id, rel_arg1_mention_id, rel_arg1_text, sentences)
 
             # rel_arg，同上
@@ -276,7 +296,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_mention_id = rel_arg2.getAttribute('entity_mention_id')
                 # 所属entity及entity mention信息
                 rel_arg2_entity_type, rel_arg2_entity_specificity, rel_arg2_mention_noun_type, rel_arg2_mention_offset, \
-                rel_arg2_mention_length, rel_arg2_context, rel_arg2_window_text, rel_arg2_sentence, rel_arg2_sentence_offset = \
+                rel_arg2_mention_length, rel_arg2_context7, rel_arg2_context5, \
+                           rel_arg2_context3, rel_arg2_context1, rel_arg2_window_text, rel_arg2_sentence, rel_arg2_sentence_offset = \
                     rel_arg_entity_info(entity_list, rel_arg2_id, rel_arg2_mention_id, rel_arg2_text, sentences)
                 rel_arg2_is_filler = 0
             else:  # rel_arg2有的不是entity是filler，先简单处理
@@ -284,7 +305,8 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 rel_arg2_id = rel_arg2.getAttribute('filler_id')
                 # if rel_arg2_id == '':
                 #     logger.info("错误：参数不是entity或filler。" + " " + part_name + " " + relation_mention_id)
-                rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context, \
+                rel_arg2_entity_type, rel_arg2_mention_offset, rel_arg2_mention_length, rel_arg2_context7, \
+                rel_arg2_context5, rel_arg2_context3, rel_arg2_context1, \
                 rel_arg2_window_text, rel_arg2_sentence, rel_arg2_sentence_offset = \
                     rel_arg_filler_info(filler_list, rel_arg2_id, rel_arg2_text, sentences)
                 rel_arg2_mention_id = ''
@@ -310,19 +332,20 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 # 拼成一个字符串
                 trigger_context = context_dict_to_string(trigger_context_dict, above, below)
 
-            # actual source
-            source = st_em[0].getElementsByTagName('source')
-            if label_polarity == 'none' or len(source) == 0:
-                source_id = ''
-                source_offset = 0
-                source_length = 0
-                source_text = ''
-            else:
-                source = source[0]
-                source_id = source.getAttribute('ere_id')
-                source_offset = int(source.getAttribute('offset'))
-                source_length = int(source.getAttribute('length'))
-                source_text = source.firstChild.data
+            if annotation_filepath != '':
+                # actual source
+                source = st_em[0].getElementsByTagName('source')
+                if label_polarity == 'none' or len(source) == 0:
+                    source_id = ''
+                    source_offset = 0
+                    source_length = 0
+                    source_text = ''
+                else:
+                    source = source[0]
+                    source_id = source.getAttribute('ere_id')
+                    source_offset = int(source.getAttribute('offset'))
+                    source_length = int(source.getAttribute('length'))
+                    source_text = source.firstChild.data
 
             relation_record = {
                 'file': part_name,
@@ -334,7 +357,9 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg1_entity_specificity': rel_arg1_entity_specificity,
                 'rel_arg1_mention_noun_type': rel_arg1_mention_noun_type,
                 'rel_arg1_mention_offset': rel_arg1_mention_offset,
-                'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context': rel_arg1_context,
+                'rel_arg1_mention_length': rel_arg1_mention_length, 'rel_arg1_context7': rel_arg1_context7,
+                'rel_arg1_context5': rel_arg1_context5, 'rel_arg1_context3': rel_arg1_context3,
+                'rel_arg1_context1': rel_arg1_context1,
                 'rel_arg1_window_text': rel_arg1_window_text, 'rel_arg1_sentence': rel_arg1_sentence,
                 'rel_arg1_sentence_offset': rel_arg1_sentence_offset,
                 'rel_arg2_id': rel_arg2_id, 'rel_arg2_mention_id': rel_arg2_mention_id,
@@ -343,15 +368,21 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                 'rel_arg2_entity_specificity': rel_arg2_entity_specificity,
                 'rel_arg2_mention_noun_type': rel_arg2_mention_noun_type,
                 'rel_arg2_mention_offset': rel_arg2_mention_offset,
-                'rel_arg2_mention_length': rel_arg2_mention_length, 'rel_arg2_context': rel_arg2_context,
+                'rel_arg2_mention_length': rel_arg2_mention_length, 'rel_arg2_context7': rel_arg2_context7,
+                'rel_arg2_context5': rel_arg2_context5, 'rel_arg2_context3': rel_arg2_context3,
+                'rel_arg2_context1': rel_arg2_context1,
                 'rel_arg2_is_filler': rel_arg2_is_filler, 'rel_arg2_window_text': rel_arg2_window_text,
                 'rel_arg2_sentence': rel_arg2_sentence,  'rel_arg2_sentence_offset': rel_arg2_sentence_offset,
                 'trigger_offset': trigger_offset, 'trigger_length': trigger_length, 'trigger_text': trigger_text,
                 'trigger_context': trigger_context,
-                'label_polarity': label_polarity,
-                'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
-                'source_text': source_text
             }
+
+            if annotation_filepath != '':
+                relation_record['label_polarity'] = label_polarity
+                relation_record['source_id'] = source_id
+                relation_record['source_offset'] = source_offset
+                relation_record['source_length'] = source_length
+                relation_record['source_text'] = source_text
 
             relation_records_each_file.append(relation_record)
 
@@ -422,11 +453,12 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
     entity_list = ere_root.getElementsByTagName('entity')
     filler_list = ere_root.getElementsByTagName('filler')
 
-    annotation_file = xml.dom.minidom.parse(annotation_filepath)
-    annotation_root = annotation_file.documentElement
-    annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
-    annotation_sentiment_list = annotation_sentiment_list[0]
-    annotation_event_list = annotation_sentiment_list.getElementsByTagName('event')
+    if annotation_filepath != '':
+        annotation_file = xml.dom.minidom.parse(annotation_filepath)
+        annotation_root = annotation_file.documentElement
+        annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
+        annotation_sentiment_list = annotation_sentiment_list[0]
+        annotation_event_list = annotation_sentiment_list.getElementsByTagName('event')
 
     for i in range(len(hopper_list)):
         # hopper信息
@@ -441,18 +473,19 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
             event_mention_realis = event_mention_list[j].getAttribute('realis')
             event_mention_ways = event_mention_list[j].getAttribute('ways')
 
-            # polarity
-            for k in range((len(annotation_event_list))):
-                annotation_event_id = annotation_event_list[k].getAttribute('ere_id')
-                if annotation_event_id == event_mention_id:
-                    st_em = annotation_event_list[k].getElementsByTagName('sentiment')
-                    # if len(st_em) == 0:
-                    #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_event_id +
-                    #                 " " + event_mention_id)
-                    label_polarity = st_em[0].getAttribute('polarity')
-                    break
-            if with_none is False and label_polarity == 'none':
-                break  # 如果为none则丢弃该样本
+            if annotation_filepath != '':
+                # polarity
+                for k in range((len(annotation_event_list))):
+                    annotation_event_id = annotation_event_list[k].getAttribute('ere_id')
+                    if annotation_event_id == event_mention_id:
+                        st_em = annotation_event_list[k].getElementsByTagName('sentiment')
+                        # if len(st_em) == 0:
+                        #     logger.info("错误：无情感标签。" + " " + part_name + " " + annotation_event_id +
+                        #                 " " + event_mention_id)
+                        label_polarity = st_em[0].getAttribute('polarity')
+                        break
+                if with_none is False and label_polarity == 'none':
+                    break  # 如果为none则丢弃该样本
 
             # trigger
             trigger = event_mention_list[j].getElementsByTagName('trigger')
@@ -461,11 +494,12 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
             trigger_length = int(trigger.getAttribute('length'))
             trigger_text = trigger.firstChild.data
             # 上下文信息
-            above = 3
-            below = 3  # 可调
-            trigger_context_dict = find_context(trigger_offset, sentences, trigger_text, above, below)
+            trigger_context_dict = find_context(trigger_offset, sentences, trigger_text, 3, 3)
             # 拼成一个字符串
-            trigger_context = context_dict_to_string(trigger_context_dict, above, below)
+            trigger_context7 = context_dict_to_string(trigger_context_dict, 3, 3)
+            trigger_context5 = context_dict_to_string(trigger_context_dict, 2, 2)
+            trigger_context3 = context_dict_to_string(trigger_context_dict, 1, 1)
+            trigger_context1 = context_dict_to_string(trigger_context_dict, 0, 0)
             # 从上下文中进一步提取窗口词
             window_length = 10
             sen = trigger_context_dict[0]['text']
@@ -511,32 +545,39 @@ def extract_event_each_file(source_filepath, ere_filepath, annotation_filepath, 
                 }
                 em_args_each_file.append(em_arg_record)
 
-            # actual source
-            source = st_em[0].getElementsByTagName('source')
-            if label_polarity == 'none' or len(source) == 0:
-                source_id = ''
-                source_offset = 0
-                source_length = 0
-                source_text = ''
-            else:
-                source = source[0]
-                source_id = source.getAttribute('ere_id')
-                source_offset = int(source.getAttribute('offset'))
-                source_length = int(source.getAttribute('length'))
-                source_text = source.firstChild.data
+            if annotation_filepath != '':
+                # actual source
+                source = st_em[0].getElementsByTagName('source')
+                if label_polarity == 'none' or len(source) == 0:
+                    source_id = ''
+                    source_offset = 0
+                    source_length = 0
+                    source_text = ''
+                else:
+                    source = source[0]
+                    source_id = source.getAttribute('ere_id')
+                    source_offset = int(source.getAttribute('offset'))
+                    source_length = int(source.getAttribute('length'))
+                    source_text = source.firstChild.data
 
             event_record = {
                 'file': part_name, 'hopper_id': hopper_id, 'event_mention_id': event_mention_id,
                 'event_mention_type': event_mention_type, 'event_mention_subtype': event_mention_subtype,
                 'event_mention_realis': event_mention_realis, 'event_mention_ways': event_mention_ways,
                 'trigger_offset': trigger_offset, 'trigger_length': trigger_length,
-                'trigger_text': trigger_text, 'trigger_context': trigger_context,
+                'trigger_text': trigger_text, 'trigger_context7': trigger_context7,
+                'trigger_context5': trigger_context5,
+                'trigger_context3': trigger_context3, 'trigger_context1': trigger_context1,
                 'trigger_window_text': window_text, 'trigger_sentence': sen, 'trigger_sentence_offset': sen_offset,
-                'em_arg_num': em_arg_num,
-                'label_polarity': label_polarity,
-                'source_id': source_id, 'source_offset': source_offset, 'source_length': source_length,
-                'source_text': source_text
+                'em_arg_num': em_arg_num
             }
+
+            if annotation_filepath != '':
+                event_record['label_polarity'] = label_polarity
+                event_record['source_id'] = source_id
+                event_record['source_offset'] = source_offset
+                event_record['source_length'] = source_length
+                event_record['source_text'] = source_text
 
             event_records_each_file.append(event_record)
 
@@ -574,7 +615,9 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
             part_name = ere_filename[:-ere_suffix_length]
             source_filepath = source_dir + part_name + ".cmp.txt"
             ere_filepath = ere_dir + ere_filename
-            annotation_filepath = annotation_dir + part_name + ".best.xml"
+            annotation_filepath = ''
+            if annotation_dir != '':
+                annotation_filepath = annotation_dir + part_name + ".best.xml"
             if os.path.exists(source_filepath) is False:  # 不存在，则是xml
                 # continue
                 prefix_length = len('ENG_DF_000183_20150408_F0000009B')  # 由于给的数据命名不统一，需要这样做
@@ -589,7 +632,8 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
                 #     continue
                 print prefix_length, source_filepath
                 ere_filepath = ere_dir + ere_filename
-                annotation_filepath = annotation_dir + part_name + ".best.xml"
+                if annotation_dir != '':
+                    annotation_filepath = annotation_dir + part_name + ".best.xml"
             # 跳过xml，全部188个文件
             # entity
             entity_records = extract_entity_each_file(source_filepath, ere_filepath,
@@ -610,6 +654,8 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
                     write_to_csv(em_args, em_args_dir + part_name + '.csv')
 
 if __name__ == '__main__':
-    traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir, entity_info_dir,
-                                 relation_info_dir, event_info_dir, em_args_dir, True)
+    traverse_and_write_mid_files(train_source_dir, train_ere_dir, train_annotation_dir, train_entity_info_dir,
+                                 train_relation_info_dir, train_event_info_dir, train_em_args_dir, True)  # 训练数据
+    traverse_and_write_mid_files(test_source_dir, test_ere_dir, '', test_entity_info_dir,
+                             test_relation_info_dir, test_event_info_dir, test_em_args_dir, True)  # 训练数据
 

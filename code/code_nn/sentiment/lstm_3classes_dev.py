@@ -9,7 +9,8 @@ if __name__ == '__main__':
     # 读取各文件中间信息
     print 'Read data...'
     df_file_records, nw_file_records = \
-        read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
+        read_file_info_records(train_ere_dir, train_entity_info_dir, train_relation_info_dir, train_event_info_dir,
+                               train_em_args_dir)
     print 'DF files:', len(df_file_records), ' NW files:', len(nw_file_records)
 
     # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试
@@ -61,11 +62,11 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # y_predict保存至csv
-    if os.path.exists(y_predict_dir) is False:
-        os.makedirs(y_predict_dir)
+    if os.path.exists(dev_y_predict_dir) is False:
+        os.makedirs(dev_y_predict_dir)
     # 分类器预测的
     y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
-    y_predict_df.to_csv(y_predict_dir+'lstm_3classes_y_predict.csv', index=False)
+    y_predict_df.to_csv(dev_y_predict_dir+'lstm_3classes_y_predict.csv', index=False)
 
     # 测试结果写入记录
     to_dict(test_files)
@@ -73,9 +74,9 @@ if __name__ == '__main__':
 
     # 寻找源
     print 'Find sources... '
-    find_sources(test_files, source_dir, ere_dir)
+    find_sources(test_files, train_source_dir, train_ere_dir)
 
     # 写入文件
-    write_best_files(test_files, predict_dir)
+    write_best_files(test_files, dev_predict_dir)
 
 # 还是老训练出现nan

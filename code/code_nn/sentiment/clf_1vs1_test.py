@@ -33,40 +33,38 @@ if __name__ == '__main__':
 
     # 读取各文件中间信息
     print 'Read data...'
-    df_file_records, nw_file_records = \
-        read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_info_dir, em_args_dir)
-    print 'DF files:', len(df_file_records), ' NW files:', len(nw_file_records)
+    train_df_file_records, train_nw_file_records = \
+        read_file_info_records(train_ere_dir, train_entity_info_dir, train_relation_info_dir, train_event_info_dir,
+                               train_em_args_dir)
+    test_df_file_records, test_nw_file_records = \
+        read_file_info_records(test_ere_dir, test_entity_info_dir, test_relation_info_dir, test_event_info_dir,
+                               test_em_args_dir)
+    # print df_file_records
+    print 'Train set: DF files:', len(train_df_file_records), ' NW files:', len(train_nw_file_records)
+    print 'Test set: DF files:', len(test_df_file_records), ' NW files:', len(test_nw_file_records)
 
-    # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试
+    # 论坛或新闻
     if mode is True:
         print '*** DF ***'
-        print 'Split into train and test dataset...'
-        portion = 0.8
-        trainnum = int(len(df_file_records) * 0.8)
-        train_files = df_file_records[:trainnum]
-        test_files = df_file_records[trainnum:]
+        train_files = train_df_file_records
+        test_files = test_df_file_records
     else:
         print '*** NW ***'
-        print 'Merge and split into train and test dataset...'
-        portion = 0.2
-        nw_trainnum = int(len(nw_file_records) * portion)
-        train_files = df_file_records + nw_file_records[:nw_trainnum]
-        test_files = nw_file_records[nw_trainnum:]
+        train_files = train_df_file_records + train_nw_file_records
+        test_files = test_nw_file_records
 
     # 提取特征及标签
     print "Samples extraction..."
     x_all = gen_general_features(train_files+test_files)  # 提取特征
     y_train = get_merged_labels(train_files)  # 0,1,2三类
-    y_test = get_merged_labels(test_files)  # 0,1,2三类
 
     # 特征分割训练测试集
     trainlen = len(y_train)
     x_train = x_all[:trainlen]
     x_test = x_all[trainlen:]
     print 'Train data number:', len(y_train)
-    print 'Test data number:', len(y_test)
+    print 'Test data number:', len(x_test)
     print 'Train labels:', y_train
-    print 'Test labels:', y_test
 
     # 三个分类器的标签
     print "Labels regenerate..."
@@ -78,11 +76,9 @@ if __name__ == '__main__':
     print "Resampling..."
     negnum = y_train3.count(1)
     posnum = y_train3.count(2)
-    print posnum
     x_train1, y_train1 = resampling_2classes(x_train1, y_train1, negnum, negnum)
     y_train2 = [1 if y == 2 else 0 for y in y_train2]  # 调整下，用于采样（后续在改改采样接口吧）
     x_train2, y_train2 = resampling_2classes(x_train2, y_train2, posnum, posnum)
-    print y_train2
     y_train3 = [1 if y == 2 else 0 for y in y_train3]
     x_train3, y_train3 = resampling_2classes(x_train3, y_train3)
 
@@ -105,31 +101,20 @@ if __name__ == '__main__':
 
     # 生成最终y_predict
     # 每个样本，若只有1个1，则对应该类；多个或0个，则概率最大类别为输入类别（按理说应该用输出值。。）
-    y_predict = [0] * len(y_test)
+    y_predict = [0] * len(y_predict1)
     for i in range(len(y_predict)):
         y_candid = [y_predict1[i], y_predict2[i], y_predict3[i]]
         y_candid = np.asarray(y_candid)
         counts = np.bincount(y_candid)
-        print counts
         y = np.argmax(counts)
-        print y
         y_predict[i] = y
 
-    # 评价
-    print 'Evalution: '
-    print 'Test labels: ', y_test
-    print 'Predict labels1:', y_predict1
-    print 'Predict labels2: ', y_predict2
-    print 'Predict labels3: ', y_predict2
-    print 'Predict labels: ', y_predict
-    evaluation_3classes(y_test, y_predict)  # 3类的测试评价
-
     # y_predict保存至csv
-    if os.path.exists(y_predict_dir) is False:
-        os.makedirs(y_predict_dir)
+    if os.path.exists(test_y_predict_dir) is False:
+        os.makedirs(test_y_predict_dir)
     # 分类器预测的
     y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
-    y_predict_df.to_csv(y_predict_dir+clf_name+'_1vs1_y_predict.csv', index=False)
+    y_predict_df.to_csv(test_y_predict_dir+clf_name+'_1vs1_y_predict.csv', index=False)
 
     # 测试结果写入记录
     to_dict(test_files)
@@ -137,9 +122,8 @@ if __name__ == '__main__':
 
     # 寻找源
     print 'Find sources... '
-    find_sources(test_files, source_dir, ere_dir)
-    # test_files = use_annotation_source(test_files)
+    find_sources(test_files, test_source_dir, test_ere_dir)
 
     # 写入文件
     print 'Write into best files...'
-    write_best_files(test_files, predict_dir)
+    write_best_files(test_files, test_predict_dir)

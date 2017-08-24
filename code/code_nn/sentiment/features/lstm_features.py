@@ -41,12 +41,12 @@ def gen_lstm_features(file_records, embeddings_index):
     for file_info in file_records:
         if 'entity' in file_info:
             entity_df = file_info['entity']
-            entity_contexts = entity_df['entity_mention_context']
+            entity_contexts = entity_df['entity_mention_context7']
             contexts.extend(entity_contexts.tolist())
         if 'relation' in file_info:
             relation_df = file_info['relation']
-            rel_arg1_contexts = relation_df['rel_arg1_context']
-            rel_arg2_contexts = relation_df['rel_arg2_context']
+            rel_arg1_contexts = relation_df['rel_arg1_context7']
+            rel_arg2_contexts = relation_df['rel_arg2_context7']
             relation_contexts = []
             for i in range(len(rel_arg1_contexts)):
                 context = str(rel_arg1_contexts[i]) + ' ' + str(rel_arg2_contexts[i])
@@ -54,7 +54,7 @@ def gen_lstm_features(file_records, embeddings_index):
             contexts.extend(relation_contexts)
         if 'event' in file_info:
             event_df = file_info['event']
-            event_contexts = event_df['trigger_context']
+            event_contexts = event_df['trigger_context7']
             contexts.extend(event_contexts.tolist())
 
     # 用上下文提取特征

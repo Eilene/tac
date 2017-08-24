@@ -37,7 +37,7 @@ def gen_entity_features(entity_info_df, embeddings_index, dim, clip_length):
     # 特征
     # 上下文词向量矩阵
     features = []
-    contexts = entity_info_df['entity_mention_context']
+    contexts = entity_info_df['entity_mention_context7']
     targets = entity_info_df['entity_mention_text']
     windows = entity_info_df['window_text']
     window_length = 6
@@ -60,8 +60,8 @@ def gen_relation_features(relation_info_df, embeddings_index, dim, clip_length):
     # 词向量矩阵
     # 两个参数+触发词
     features = []
-    rel_arg1_contexts = relation_info_df['rel_arg1_context']
-    rel_arg2_contexts = relation_info_df['rel_arg2_context']
+    rel_arg1_contexts = relation_info_df['rel_arg1_context7']
+    rel_arg2_contexts = relation_info_df['rel_arg2_context7']
     trigger_contexts = relation_info_df['trigger_context']
     trigger_offsets = relation_info_df['trigger_offset']
     rel_arg1_texts = relation_info_df['rel_arg1_text']
@@ -122,7 +122,7 @@ def gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, cl
     # 词向量矩阵
     # 触发词+各个参数
     features = []
-    trigger_contexts = event_info_df['trigger_context']
+    trigger_contexts = event_info_df['trigger_context7']
     trigger_texts = event_info_df['trigger_text']
     trigger_windows = event_info_df['trigger_window_text']
     window_length = 6
@@ -144,21 +144,20 @@ def gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, cl
     return features
 
 
-def convert_samples(features, labels):
-    labels = np.array(labels)
-    # print 'Label shape: ', labels.shape
+def convert_features(features):
+    sample_num = len(features)
     matrix_length = len(features[0])
     count = 0
     print backend.image_dim_ordering()
     if backend.image_dim_ordering() == 'th':  # 竟然输出是tf，且倒过来真报错
-        data = np.empty((labels.shape[0], 1, matrix_length, 100), dtype='float32')
+        data = np.empty((sample_num, 1, matrix_length, 100), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
             data[count, 0, :, :] = feature  # 通道维顺序？？不同后端不同，是不是要改？？
             count += 1
             features = data
     else:
-        data = np.empty((labels.shape[0], matrix_length, 100, 1), dtype='float32')
+        data = np.empty((sample_num, matrix_length, 100, 1), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
             data[count, :, :, 0] = feature
@@ -167,7 +166,7 @@ def convert_samples(features, labels):
 
     print 'Features shape:', features.shape
 
-    return features, labels
+    return features
 
 
 def gen_matrix_features(file_records, embeddings_index, dim, clip_length):

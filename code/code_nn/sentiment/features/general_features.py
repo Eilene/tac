@@ -31,7 +31,7 @@ def gen_general_features(file_records):
         if 'entity' in file_info:
             entity_df = file_info['entity']
             # print len(entity_df)  # 0也没关系，就正好是没加
-            entity_contexts = entity_df['entity_mention_context']
+            entity_contexts = entity_df['entity_mention_context7']
             entity_texts = entity_df['entity_mention_text']
             contexts.extend(entity_contexts.tolist())
             texts.extend(entity_texts.tolist())
@@ -49,8 +49,8 @@ def gen_general_features(file_records):
 
         if 'relation' in file_info:
             relation_df = file_info['relation']
-            rel_arg1_contexts = relation_df['rel_arg1_context']
-            rel_arg2_contexts = relation_df['rel_arg2_context']
+            rel_arg1_contexts = relation_df['rel_arg1_context7']
+            rel_arg2_contexts = relation_df['rel_arg2_context7']
             relation_contexts = []
             rel_arg1_texts = relation_df['rel_arg1_text']
             rel_arg2_texts = relation_df['rel_arg2_text']
@@ -77,7 +77,7 @@ def gen_general_features(file_records):
 
         if 'event' in file_info:
             event_df = file_info['event']
-            event_contexts = event_df['trigger_context']
+            event_contexts = event_df['trigger_context7']
             event_texts = event_df['trigger_text']
             contexts.extend(event_contexts.tolist())
             texts.extend(event_texts.tolist())
