@@ -2,6 +2,7 @@
 
 from network_fit import *
 from utils.resampling import up_resampling_3classes
+from features.general_features import gen_general_features
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -29,24 +30,38 @@ if __name__ == '__main__':
         train_files = df_file_records + nw_file_records[:nw_trainnum]
         test_files = nw_file_records[nw_trainnum:]
 
-    # 训练部分
     # 提取特征及标签
+    print 'Samples extraction...'
     total_clip_length = 56
     embeddings_index, dim = read_embedding_index(glove_100d_path)
-    print 'Train samples extraction...'
-    x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    # 词向量特征
+    x_train1 = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_test1 = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    # 标签
     y_train = get_merged_labels(train_files)  # 0,1,2三类
+    y_test = get_merged_labels(test_files)  # 0,1,2三类
+    # tfidf和类别等特征
+    x_all = gen_general_features(train_files + test_files)
+    x_train2 = x_all[:len(y_train)]
+    x_test2 = x_all[len(y_train):]
+    # 拼起来
+    x_train = []
+    x_test = []
+    for i in range(len(x_train1)):
+        x = x_train1[i] + x_train2[i]
+        x_train.append(x)
+    for i in range(len(x_test1)):
+        x = x_test1[i] + x_test2[i]
+        x_test.append(x)
+
+    # 重采样
     print 'Resampling...'
-    x_train, y_train = up_resampling_3classes(x_train, y_train)  # 重采样
+    x_train, y_train = up_resampling_3classes(x_train, y_train)
+
     # 训练
     print 'Train...'
     model = train_model(x_train, y_train, 3)  # 分三类
 
-    # 测试部分
-    # 提取特征及标签
-    print 'Test samples extraction...'
-    x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
-    y_test = get_merged_labels(test_files)  # 0,1,2三类
     # 测试
     print 'Test...'
     probabilities = model.predict(x_test)

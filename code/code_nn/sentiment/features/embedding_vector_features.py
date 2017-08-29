@@ -7,6 +7,7 @@ def matrix_to_avg_vector(x_matrix):
     x_matrix = np.array(x_matrix)
     length = x_matrix.shape[-1]
     sample_num = x_matrix.shape[-2]
+    # print length, sample_num
     x_vector = []
     for i in x_matrix:
         temp = np.zeros(length)

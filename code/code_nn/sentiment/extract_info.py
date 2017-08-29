@@ -171,13 +171,14 @@ def rel_arg_entity_info(entity_list, rel_arg_id, rel_arg_mention_id, rel_arg_tex
                     # 上下文信息
                     rel_arg_context_dict = find_context(rel_arg_mention_offset, sentences,
                                                          rel_arg_text, 3, 3)
+                    if rel_arg_context_dict is None:
+                        print rel_arg_text, rel_arg_id, rel_arg_mention_id
                     # 拼成一个字符串
                     rel_arg_context7 = context_dict_to_string(rel_arg_context_dict, 3, 3)
                     rel_arg_context5 = context_dict_to_string(rel_arg_context_dict, 2, 2)
                     rel_arg_context3 = context_dict_to_string(rel_arg_context_dict, 1, 1)
                     rel_arg_context1 = context_dict_to_string(rel_arg_context_dict, 0, 0)
-                    # if rel_arg_context == '':
-                    #     print rel_arg_text, rel_arg_id, part_name, rel_arg_context
+
                     # 从上下文中进一步提取窗口词
                     window_length = 10
                     sen = rel_arg_context_dict[0]['text']
@@ -226,6 +227,7 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
 
 
 def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
+    print part_name
     relation_records_each_file = []
 
     source_fp = open(source_filepath)

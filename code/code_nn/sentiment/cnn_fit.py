@@ -36,7 +36,7 @@ def cnn_fit(x_train, y_train, classnum):
 
     # 开始建立CNN模型
     batch_size = 32
-    epochs = 500
+    epochs = 3
 
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))

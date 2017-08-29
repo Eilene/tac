@@ -34,6 +34,8 @@ def word_segmentation(sentence):
 def split_sentences(whole_text):
     # 先把各标签中的段落抽出来
     paras = re.findall(r'>([\s\S]*?)<', whole_text)  # 是否会有非html标签的><，注意看具体文件
+    # paras = re.findall(r'>([\s\S]*?)<post|>([\s\S]*?)<quote|>([\s\S]*?)</post|>([\s\S]*?)</quote|>([\s\S]*?)<headline|>([\s\S]*?)</headline', whole_text)  # 是否会有非html标签的><，注意看具体文件
+    # print paras
     # 再分句
     # 中间\n好像都未分，是不是本来就不该分，会有强行换行存在
     # 有些符号没分，如“...”，好像不太合理
@@ -47,7 +49,7 @@ def split_sentences(whole_text):
     sencs = []
     start = 0
     for text in texts:
-        index = whole_text.find(text, start)
+        index = whole_text.find(text, start)  # 有问题了，有的标签中和外面一样的，怎么办；把标签offset范围找好？
         if index == -1:
             print "error: cannot find sentence in source text"
             sys.exit()
@@ -77,6 +79,7 @@ def find_context(word_offset, sencs, whole_text, above, below):
         if (mid == slen-1 and sencs[mid]['offset'] <= word_offset) \
                 or (mid < len(sencs)-1 and sencs[mid]['offset'] <= word_offset < sencs[mid+1]['offset']):
             if sencs[mid]['offset']+len(sencs[mid]['text']) < word_offset:
+                # print sencs[mid]['offset'], len(sencs[mid]['text']), word_offset  # 都在这
                 return  # 词offset大于该句子范围，说明在html标签内，是源
             # 当前句子
             cx[0] = sencs[mid]
@@ -124,6 +127,8 @@ def get_contexts(source_filename, ere_filename, above, below):
             # text_em = entity_mention_list[i].getElementsByTagName('mention_text')
             # text = text_em[0].firstChild.data
             # print ere_id, text, offset, ids_with_contexts[ere_id]
+        # else:
+        #     print ere_id, offset
 
     return ids_with_contexts  # key为id，value为上下文句子
 
@@ -148,9 +153,9 @@ if __name__ == '__main__':
     # print id_sencs
 
     # 测试
-    id_sencs = get_contexts("../data/2016E27_V2/data/source/0a421343005f3241376fa01e1cb3c6fb.cmp.txt",
-                            "../data/2016E27_V2/data/ere/0a421343005f3241376fa01e1cb3c6fb.rich_ere.xml", 3, 3)
+    id_sencs = get_contexts("../../../data/eng/source/ENG_DF_001471_20131112_G00A0FOVI.xml",
+                            "../../../data/eng/ere/ENG_DF_001471_20131112_G00A0FOVI.rich_ere.xml", 3, 3)
     # 3,3，表示需要上文3个句子，下文3个句子，加上当前句，共7个句子
-    print id_sencs
+    # print id_sencs
 
 

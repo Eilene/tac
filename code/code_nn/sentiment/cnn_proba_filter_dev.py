@@ -2,7 +2,6 @@
 
 from cnn_fit import *
 from utils.filter_none_with_stdict import *
-from features.test import *
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW

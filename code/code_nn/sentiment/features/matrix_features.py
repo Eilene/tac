@@ -14,6 +14,7 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
     words = []
     for senc in sencs:
         words.extend(nltk.word_tokenize(senc))
+    count = 0
     for word in words:
         lemmed = lemm.lemmatize(word)
         if lemmed in embeddings_index:
@@ -21,7 +22,9 @@ def gen_embeddings_matrix(context, clip_length, embeddings_index, dim):
             # print lemmed, word_vector
         else:
             word_vector = [0.01] * dim
+            count += 1
         embeddings_matrix.append(word_vector)
+    # print 'total, unknown word: ', len(words), count
 
     # 截断补齐
     curr_length = len(embeddings_matrix)
@@ -37,7 +40,7 @@ def gen_entity_features(entity_info_df, embeddings_index, dim, clip_length):
     # 特征
     # 上下文词向量矩阵
     features = []
-    contexts = entity_info_df['entity_mention_context7']
+    contexts = entity_info_df['entity_mention_context3']
     targets = entity_info_df['entity_mention_text']
     windows = entity_info_df['window_text']
     window_length = 6
@@ -60,8 +63,8 @@ def gen_relation_features(relation_info_df, embeddings_index, dim, clip_length):
     # 词向量矩阵
     # 两个参数+触发词
     features = []
-    rel_arg1_contexts = relation_info_df['rel_arg1_context7']
-    rel_arg2_contexts = relation_info_df['rel_arg2_context7']
+    rel_arg1_contexts = relation_info_df['rel_arg1_context3']
+    rel_arg2_contexts = relation_info_df['rel_arg2_context3']
     trigger_contexts = relation_info_df['trigger_context']
     trigger_offsets = relation_info_df['trigger_offset']
     rel_arg1_texts = relation_info_df['rel_arg1_text']
@@ -122,7 +125,7 @@ def gen_event_features(event_info_df, em_args_info_df, embeddings_index, dim, cl
     # 词向量矩阵
     # 触发词+各个参数
     features = []
-    trigger_contexts = event_info_df['trigger_context7']
+    trigger_contexts = event_info_df['trigger_context3']
     trigger_texts = event_info_df['trigger_text']
     trigger_windows = event_info_df['trigger_window_text']
     window_length = 6
@@ -148,16 +151,18 @@ def convert_features(features):
     sample_num = len(features)
     matrix_length = len(features[0])
     count = 0
-    print backend.image_dim_ordering()
+    dim = len(features[0][0])
+    print dim
+    # print backend.image_dim_ordering()
     if backend.image_dim_ordering() == 'th':  # 竟然输出是tf，且倒过来真报错
-        data = np.empty((sample_num, 1, matrix_length, 100), dtype='float32')
+        data = np.empty((sample_num, 1, matrix_length, dim), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
             data[count, 0, :, :] = feature  # 通道维顺序？？不同后端不同，是不是要改？？
             count += 1
             features = data
     else:
-        data = np.empty((sample_num, matrix_length, 100, 1), dtype='float32')
+        data = np.empty((sample_num, matrix_length, dim, 1), dtype='float32')
         # Train_X = sequence.pad_sequences(Train_X, maxlen=Sentence_length)
         for feature in features:
             data[count, :, :, 0] = feature
