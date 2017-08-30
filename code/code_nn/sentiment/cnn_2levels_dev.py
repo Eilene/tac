@@ -1,6 +1,6 @@
 # coding=utf-8
 from cnn_fit import *
-from utils.resampling import resampling_2classes
+from utils.resampling import up_resampling_2classes
 
 
 def only_pos_neg(x, y):
@@ -51,8 +51,7 @@ if __name__ == '__main__':
     y_train1 = [1 if y != 0 else 0 for y in y_train]
     x_train2, y_train2 = only_pos_neg(x_train, y_train)
     y_train2 = [y-1 for y in y_train2]
-    x_train1, y_train1 = resampling_2classes(x_train, y_train1, len(y_train2))  # 重采样
-    x_train2, y_train2 = resampling_2classes(x_train2, y_train2)  # 重采样
+    x_train1, y_train1 = up_resampling_2classes(x_train, y_train1)  # 重采样  ## 不行，全0了。。。。。
     x_train1 = convert_features(x_train1)  # 转换为通道模式
     x_train2 = convert_features(x_train2)  # 转换为通道模式
     # 训练

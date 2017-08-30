@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
 
 from src.sentiment.features.general_features import gen_general_features
@@ -11,7 +12,7 @@ from utils.file_records_other_modification import to_dict
 from utils.get_labels import get_merged_labels
 from utils.predict_by_proba import *
 from utils.read_file_info_records import *
-from utils.resampling import resampling_2classes
+from utils.resampling import up_resampling_2classes
 from utils.write_best import write_best_files
 from utils.find_source import find_sources
 
@@ -29,7 +30,7 @@ def only_pos_neg(x, y):
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
-    clf_name = 'svm'  # 可选lr，svm等
+    clf_name = 'lr'  # 可选lr，svm等
 
     # 读取各文件中间信息
     print 'Read data...'
@@ -70,16 +71,18 @@ if __name__ == '__main__':
     # 分出两种样本
     y_train1 = [1 if y != 0 else 0 for y in y_train]
     x_train2, y_train2 = only_pos_neg(x_train, y_train)
-    y_train2 = [y-1 for y in y_train2]  # 变0,1
-    x_train1, y_train1 = resampling_2classes(x_train, y_train1, len(y_train2))  # 重采样
-    x_train2, y_train2 = resampling_2classes(x_train2, y_train2)  # 重采样
+    x_train1, y_train1 = up_resampling_2classes(x_train, y_train1)  # 重采样
 
     # 训练
     print 'Train...'
     # clf = MultinomialNB()  # 不接受负值
-    clf1 = svm.SVC(probability=True)
+    if clf_name == 'lr':
+        clf1 = LogisticRegression()
+        clf2 = LogisticRegression()
+    else:
+        clf1 = svm.SVC(probability=True)
+        clf2 = svm.SVC(probability=True)
     clf1.fit(x_train1, y_train1)
-    clf2 = svm.SVC(probability=True)
     clf2.fit(x_train2, y_train2)
 
     # 测试
@@ -88,7 +91,6 @@ if __name__ == '__main__':
     y_predict1 = predict_by_proba(y_pred_proba1)
     y_pred_proba2 = clf2.predict_proba(x_test)
     y_predict2 = predict_by_proba(y_pred_proba2)
-    y_predict2 = [y+1 for y in y_predict2]  # 变1,2
     y_predict = [y_predict2[i] if y_predict1[i] != 0 else 0 for i in range(len(y_predict1))]
 
     # 评价

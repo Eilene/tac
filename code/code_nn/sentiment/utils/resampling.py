@@ -53,6 +53,45 @@ def up_resampling_3classes(x, y):
     return x_new, y_new
 
 
+# 二类上采样
+# 0:none，另一类非0即可
+# 另一类采样至与none类一样多
+def up_resampling_2classes(x, y, none_label=0):  # none_label泛指数量多的那一类的标签
+    samples = []
+
+    # 三类样本分开
+    not_none_index = []
+    datanum = len(y)
+    for i in range(datanum):
+        if y[i] != none_label:
+            not_none_index.append(i)
+        else:  # none样本直接放入
+            samples.append([x[i], none_label])
+
+    # 有放回采样
+    not_none_num = len(not_none_index)
+    none_num = len(samples)
+    print 'Before resampling not none vs none:', not_none_num, none_num
+    not_none_samplenum = none_num
+    print 'After resampling pos vs neg vs none:', not_none_samplenum, none_num
+    # 非none样本
+    for i in range(not_none_samplenum):
+        index = random.randint(0, not_none_num - 1)
+        samples.append([x[not_none_index[index]], y[not_none_index[index]]])
+
+    # 打乱样本顺序，使其均匀
+    random.shuffle(samples)
+
+    # 拆分特征和标签
+    x_new = []
+    y_new = []
+    for sample in samples:
+        x_new.append(sample[0])
+        y_new.append(sample[1])
+
+    return x_new, y_new
+
+
 # 标签0,1,2
 def resampling_3classes(x, y, pos_samplenum=-1, neg_samplenum=-1, none_samplenum=-1):
     x_new = []

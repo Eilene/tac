@@ -72,16 +72,17 @@ if __name__ == '__main__':
     print 'Test...'
     # clf = joblib.load(clf_name+'_model.m')
     y_pred_proba = clf.predict_proba(x_test)
-    y_predict_clf = predict_by_proba_3classes_threshold(y_pred_proba, 0.3)
+    y_predict_clf = predict_by_proba_3classes_threshold(y_pred_proba, 0.4)
     # 测试文件根据打分过滤掉none的样本
-    y_predict_filter = filter_none(test_files)
-    y_predict = [y_predict_clf[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict_clf))]
+    # y_predict_filter = filter_none(test_files)
+    # y_predict = [y_predict_clf[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict_clf))]
+    y_predict = y_predict_clf
 
     # 评价
     print 'Evalution: '
     print 'Test labels: ', y_test
-    print 'Clf predict labels: ', y_predict_clf
-    print 'Filter labels:', y_predict_filter
+    # print 'Clf predict labels: ', y_predict_clf
+    # print 'Filter labels:', y_predict_filter
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
@@ -92,8 +93,8 @@ if __name__ == '__main__':
     y_predict_df = pd.DataFrame(y_predict_clf, columns=['y_predict'])
     y_predict_df.to_csv(dev_y_predict_dir+clf_name+'_y_predict.csv', index=False)
     # 词典过滤的
-    y_predict1_df = pd.DataFrame(y_predict_filter, columns=['y_predict'])
-    y_predict1_df.to_csv(dev_y_predict_dir + 'filter_y_predict.csv', index=False)
+    # y_predict1_df = pd.DataFrame(y_predict_filter, columns=['y_predict'])
+    # y_predict1_df.to_csv(dev_y_predict_dir + 'filter_y_predict.csv', index=False)
 
     # 测试结果写入记录
     to_dict(test_files)

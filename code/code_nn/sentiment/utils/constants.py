@@ -37,3 +37,5 @@ test_y_predict_dir = st_output_prefix + 'test_y_predict/'
 pos_word_path = data_prefix + 'en_pos_senti.dic'
 neg_word_path = data_prefix + 'en_neg_senti.dic'
 negation_word_path = data_prefix + 'en_negation_word.dic'
+
+imdb_dir = data_prefix + 'aclImdb/'

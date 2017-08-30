@@ -37,16 +37,16 @@ if __name__ == '__main__':
     print 'Samples extraction...'
     without_none(train_files)  # 训练文件去掉none的样本
     # 词向量特征
-    x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)
-    x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)
+    # x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)
+    # x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)
     # 标签
     y_train = get_merged_labels(train_files)  # 1,2
     y_train = [y-1 for y in y_train]  # 改为0,1
     y_test = get_merged_labels(test_files)  # 0,1,2
     # tfidf和类别等特征
-    # x_all = gen_general_features(train_files + test_files)
-    # x_train2 = x_all[:len(y_train)]
-    # x_test2 = x_all[len(y_train):]
+    x_all = gen_general_features(train_files + test_files)
+    x_train = x_all[:len(y_train)]
+    x_test = x_all[len(y_train):]
     # # 拼起来
     # x_train = []
     # x_test = []
@@ -58,18 +58,19 @@ if __name__ == '__main__':
     #     x_test.append(x)
 
     # 训练
-    # print 'Train...'
-    # model = train_model(x_train, y_train, 2)  # 分正负
+    print 'Train...'
+    model = train_model(x_train, y_train, 2)  # 分正负
 
     # 搞一个调参
-    grid_result = grid_search(x_train, y_train, 2)
-    model = grid_result.best_estimator_
+    # grid_result = grid_search(x_train, y_train, 2)
+    # model = grid_result.best_estimator_
 
     # 测试
     print 'Test...'
-    y_predict_nn = probabilities = model.predict(x_test)
-    # print probabilities
-    # y_predict_nn = predict_by_proba_3classes_threshold(probabilities, 0.6)
+    probabilities = model.predict(x_test)
+    # y_predict_nn = probabilities
+    print probabilities
+    y_predict_nn = predict_by_proba_3classes_threshold(probabilities, 0.5, 0.2)  # 这个阈值该咋调呢。。
     # 测试文件根据打分过滤掉none的样本
     # y_predict_filter = filter_none(test_files)
     # y_predict = [y_predict_nn[i] if y_predict_filter[i] != 0 else 0 for i in range(len(y_predict_nn))]

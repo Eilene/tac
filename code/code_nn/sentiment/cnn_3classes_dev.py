@@ -1,6 +1,6 @@
 # coding=utf-8
 from cnn_fit import *
-from utils.resampling import resampling_3classes
+from utils.resampling import up_resampling_3classes
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     x_train = gen_matrix_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_train = get_merged_labels(train_files)  # 0,1,2三类
     print 'Resampling...'
-    x_train, y_train = resampling_3classes(x_train, y_train, 2000, y_train.count(1), y_train.count(1))  # 重采样
+    x_train, y_train = up_resampling_3classes(x_train, y_train)  # 重采样
     x_train = convert_features(x_train)  # 转换为通道模式
     # 训练
     print 'Train...'

@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from sklearn.externals import joblib
+from sklearn import svm
 from sklearn.linear_model import LogisticRegression
 
 from features.general_features import gen_general_features
@@ -11,7 +12,7 @@ from utils.file_records_other_modification import to_dict
 from utils.get_labels import get_merged_labels
 from utils.predict_by_proba import *
 from utils.read_file_info_records import *
-from utils.resampling import resampling_2classes
+from utils.resampling import up_resampling_2classes
 from utils.write_best import write_best_files
 from utils.find_source import find_sources
 
@@ -67,20 +68,22 @@ if __name__ == '__main__':
     print "Resampling..."
     negnum = y_train2.count(1)
     posnum = y_train3.count(1)
-    x_train1, y_train1 = resampling_2classes(x_train, y_train1, negnum+posnum)  # 参数填一个，后面默认1:1
-    x_train2, y_train2 = resampling_2classes(x_train, y_train2, negnum)
-    x_train3, y_train3 = resampling_2classes(x_train, y_train3, posnum)
+    x_train1, y_train1 = up_resampling_2classes(x_train, y_train1, 1)  # 采到和标签1的一样多
+    x_train2, y_train2 = up_resampling_2classes(x_train, y_train2)
+    x_train3, y_train3 = up_resampling_2classes(x_train, y_train3)
 
     # 训练
     print 'Train...'
-    clf1 = LogisticRegression()
-    # clf1 = svm.SVC(probability=True)
+    if clf_name == 'lr':
+        clf1 = LogisticRegression()
+        clf2 = LogisticRegression()
+        clf3 = LogisticRegression()
+    else:
+        clf1 = svm.SVC(probability=True)
+        clf2 = svm.SVC(probability=True)
+        clf3 = svm.SVC(probability=True)
     clf1.fit(x_train1, y_train1)
-    clf2 = LogisticRegression()
-    # clf2 = svm.SVC(probability=True)
     clf2.fit(x_train2, y_train2)
-    clf3 = LogisticRegression()
-    # clf3 = svm.SVC(probability=True)
     clf3.fit(x_train3, y_train3)
 
     # 测试

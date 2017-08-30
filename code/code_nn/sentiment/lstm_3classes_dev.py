@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from lstm_fit import *
-from utils.resampling import resampling_3classes
+from utils.resampling import up_resampling_3classes
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     x_train = x_all[:trainlen]
     x_test = x_all[trainlen:]
     # 重采样
-    x_train, y_train = resampling_3classes(x_train, y_train)
+    x_train, y_train = up_resampling_3classes(x_train, y_train)
     x_train = np.asarray(x_train)
     print 'Train data number:', len(y_train)
     print 'Test data number:', len(y_test)

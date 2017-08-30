@@ -2,6 +2,7 @@
 
 import numpy as np
 from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 from sklearn.externals import joblib
 
 from features.general_features import gen_general_features
@@ -11,7 +12,7 @@ from utils.evaluation import evaluation_3classes
 from utils.file_records_other_modification import to_dict
 from utils.get_labels import get_merged_labels
 from utils.read_file_info_records import *
-from utils.resampling import resampling_2classes
+from utils.resampling import up_resampling_2classes
 from utils.write_best import write_best_files
 from utils.find_source import find_sources
 
@@ -29,7 +30,7 @@ def only_two_classes(x, y, label):
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
-    clf_name = 'svm'  # 可选lr，svm等
+    clf_name = 'lr'  # 可选lr，svm等
 
     # 读取各文件中间信息
     print 'Read data...'
@@ -79,19 +80,21 @@ if __name__ == '__main__':
     print "Resampling..."
     negnum = y_train3.count(1)
     posnum = y_train3.count(2)
-    x_train1, y_train1 = resampling_2classes(x_train1, y_train1, negnum, negnum)
-    y_train2 = [1 if y == 2 else 0 for y in y_train2]  # 调整下，用于采样（后续在改改采样接口吧）
-    x_train2, y_train2 = resampling_2classes(x_train2, y_train2, posnum, posnum)
-    y_train3 = [1 if y == 2 else 0 for y in y_train3]
-    x_train3, y_train3 = resampling_2classes(x_train3, y_train3)
+    x_train1, y_train1 = up_resampling_2classes(x_train1, y_train1)
+    x_train2, y_train2 = up_resampling_2classes(x_train2, y_train2)
 
     # 训练
     print 'Train...'
-    clf1 = svm.SVC()
+    if clf_name == 'svm':
+        clf1 = svm.SVC()
+        clf2 = svm.SVC()
+        clf3 = svm.SVC()
+    else:
+        clf1 = LogisticRegression()
+        clf2 = LogisticRegression()
+        clf3 = LogisticRegression()
     clf1.fit(x_train1, y_train1)
-    clf2 = svm.SVC()
     clf2.fit(x_train2, y_train2)
-    clf3 = svm.SVC()
     clf3.fit(x_train3, y_train3)
 
     # 测试
@@ -99,8 +102,6 @@ if __name__ == '__main__':
     y_predict1 = clf1.predict(x_test)
     y_predict2 = clf2.predict(x_test)
     y_predict3 = clf3.predict(x_test)
-    y_predict2 = [2 if y == 1 else 0 for y in y_predict2]  # 调整回来
-    y_predict3 = [2 if y == 1 else 1 for y in y_predict3]  # 调整回来
 
     # 生成最终y_predict
     # 每个样本，若只有1个1，则对应该类；多个或0个，则概率最大类别为输入类别（按理说应该用输出值。。）
