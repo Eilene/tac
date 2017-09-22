@@ -28,12 +28,12 @@ if __name__ == '__main__':
     # word2vec训练
     # inp = 'imdb_word2vec_input.txt'
     model = Word2Vec(tokenized_texts, size=100, window=5, min_count=5, workers=multiprocessing.cpu_count())
-    outp1 = data_prefix+'imdb.model'
-    outp2 = data_prefix+'imdb.vector'
+    outp1 = st_output_prefix+'imdb.model'
+    outp2 = st_output_prefix+'imdb.vector'
     model.save(outp1)
     model.wv.save_word2vec_format(outp2, binary=False)
 
     # 导入模型
-    model = Word2Vec.load(data_prefix+"imdb.model")
+    model = Word2Vec.load(st_output_prefix+"imdb.model")
     print model['me']
 

@@ -37,9 +37,10 @@ def read_file_info_records(ere_dir, entity_info_dir, relation_info_dir, event_in
                     em_args_df = pd.read_csv(em_args_filepath)
                     record['em_args'] = em_args_df
             if record != {}:
-                if record['filename'][:35] != 'CMN_DF':  # 论坛数据
+                if record['filename'][:3] != 'AFP' and record['filename'][:3] != 'APW' \
+                        and record['filename'][:3] != 'NYT':  # 论坛数据
                     df_records.append(record)
-                else:  # 新闻数据
+                else:  # 新闻数据 # 中文暂时没有新闻数据
                     nw_records.append(record)
 
     return df_records, nw_records

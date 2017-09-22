@@ -1,14 +1,7 @@
 # coding=utf-8
 
-from src.sentiment_english.utils.constants import *
-from src.sentiment_english.utils.read_file_info_records import *
-from src.sentiment_english.utils.get_labels import get_labels
-from src.sentiment_english.utils.evaluation import evaluation_3classes
-from src.sentiment_english.utils.file_records_other_modification import to_dict
-from src.sentiment_english.utils.attach_predict_labels import *
-from src.sentiment_english.utils.find_source import find_sources
-from src.sentiment_english.utils.write_best import write_best_files
-from src.sentiment_english.utils.resampling import up_resampling_3classes
+from src.sentiment_english.utils.all_utils_package import *
+import re
 
 
 def get_adam_dataform(file_records):
@@ -46,6 +39,10 @@ def get_adam_dataform(file_records):
                                      entity_contexts[i][t_offset+start+length:]
                 entity_contexts[i] = entity_contexts[i].replace("\n", "")
                 entity_contexts[i] = entity_contexts[i].replace("\r", "")
+                re_h = re.compile('</?\w+[^>]*>')  # HTML标签
+                # print entity_contexts[i]
+                entity_contexts[i] = re_h.sub("", entity_contexts[i])
+                # print entity_contexts[i]
             contexts.extend(entity_contexts)
             texts.extend(entity_texts)
 
@@ -104,6 +101,7 @@ if __name__ == '__main__':
 
     if in_out is True:
         # 重采样
+        # 不行，重采样之后更差
         print len(train_labels)
         train_samples = []
         for i in range(len(train_labels)):

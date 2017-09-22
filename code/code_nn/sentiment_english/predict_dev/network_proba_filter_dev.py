@@ -1,6 +1,7 @@
 # coding=utf-8
 
 from src.sentiment_english.models.network_fit import *
+from gensim.models.doc2vec import Doc2Vec
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -29,18 +30,18 @@ if __name__ == '__main__':
         test_files = nw_file_records[nw_trainnum:]
 
     # 提取特征及标签
-    print 'Read glove vectors...'
-    total_clip_length = 50
-    embeddings_index, dim = read_embedding_index(glove_100d_path)
-    print 'Samples extraction...'
-    without_none(train_files)  # 训练文件去掉none的样本
-    # 词向量特征
-    x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)
-    x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)
-    # # 标签
-    y_train = get_merged_labels(train_files)  # 1,2
-    y_train = [y-1 for y in y_train]  # 改为0,1
-    y_test = get_merged_labels(test_files)  # 0,1,2
+    # print 'Read glove vectors...'
+    # total_clip_length = 50
+    # embeddings_index, dim = read_embedding_index(glove_100d_path)
+    # print 'Samples extraction...'
+    # without_none(train_files)  # 训练文件去掉none的样本
+    # # 词向量特征
+    # x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)
+    # x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)
+    # # # 标签
+    # y_train = get_merged_labels(train_files)  # 1,2
+    # y_train = [y-1 for y in y_train]  # 改为0,1
+    # y_test = get_merged_labels(test_files)  # 0,1,2
     # tfidf和类别等特征
     # x_all = gen_general_features(train_files + test_files)
     # x_train = x_all[:len(y_train)]
@@ -78,13 +79,28 @@ if __name__ == '__main__':
     # x_train = x_all[:trainnum]
     # x_test = x_all[trainnum:]
 
+    # 标签
+    print 'Load doc2vec...'
+    y_train = get_merged_labels(train_files)  # 0,1,2三类
+    y_test = get_merged_labels(test_files)  # 0,1,2三类
+    docmodel_path = st_output_prefix + 'doc2vec_model_200.txt'
+    model = Doc2Vec.load(docmodel_path)
+    doc2vec_model = model.docvecs
+    x_train = []
+    for i in range(len(y_train)):
+        x_train.append(doc2vec_model[i].tolist())
+    x_test = []
+    for i in range(len(y_test)):
+        x_test.append(doc2vec_model[len(y_train)+i].tolist())
+    # 切分类似普通特征。可直接加入到各分类器代码中
+
     # 训练
     print 'Train...'
-    model = train_model(x_train, y_train, 2)  # 分正负
+    model = network_fit(x_train, y_train, 2)  # 分正负
 
     # 搞一个调参
-    # grid_result = grid_search(x_train, y_train, 2)
-    # model = grid_result.best_estimator_
+    # print 'Grid search...'
+    # model = grid_search_network(x_train, y_train, 2, 5)
 
     # 测试
     print 'Test...'

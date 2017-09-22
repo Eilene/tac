@@ -1,13 +1,6 @@
 # coding=utf-8
 
-from src.sentiment_english.utils.attach_predict_labels import set_neg
-from src.sentiment_english.utils.constants import *
-from src.sentiment_english.utils.evaluation import evaluation_3classes, evaluation_source
-from src.sentiment_english.utils.file_records_other_modification import to_dict
-from src.sentiment_english.utils.get_labels import get_merged_labels
-from src.sentiment_english.utils.read_file_info_records import *
-from src.sentiment_english.utils.write_best import write_best_files
-from src.sentiment_english.utils.find_source import find_sources
+from src.sentiment_english.utils.all_utils_package import *
 
 if __name__ == '__main__':
     mode = True  # True:DF,false:NW
@@ -25,7 +18,7 @@ if __name__ == '__main__':
         print '*** DF ***'
         print 'Split into train and test dataset...'
         portion = 0.8
-        trainnum = int(len(df_file_records) * 0.8)
+        trainnum = int(len(df_file_records) * portion)
         train_files = df_file_records[:trainnum]  # 这里train_files没有用
         test_files = df_file_records[trainnum:]
     else:
@@ -59,7 +52,7 @@ if __name__ == '__main__':
     # 寻找源
     print 'Find sources... '
     to_dict(test_files)
-    # find_sources(test_files, train_source_dir, train_ere_dir)
+    find_sources(test_files, train_source_dir, train_ere_dir)
     # use_annotation_source(test_files)
     # 加一个找源准确率的评价
     evaluation_source(test_files)

@@ -31,7 +31,7 @@ test_em_args_dir = test_mid_files_dir + 'em_args/'
 
 dev_predict_dir = st_output_prefix + 'predict_dev/'
 dev_y_predict_dir = st_output_prefix + 'y_predict_dev/'
-test_predict_dir = st_output_prefix + 'predict-test/'
+test_predict_dir = st_output_prefix + 'predict_test/'
 test_y_predict_dir = st_output_prefix + 'y_predict_test/'
 
 pos_word_path = data_prefix + 'en_pos_senti.dic'

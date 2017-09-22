@@ -35,15 +35,15 @@ if __name__ == '__main__':
     total_clip_length = 56
     embeddings_index, dim = read_embedding_index(glove_100d_path)
     # 词向量特征
-    # x_train1 = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
-    # x_test1 = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
     # 标签
     y_train = get_merged_labels(train_files)  # 0,1,2三类
     y_test = get_merged_labels(test_files)  # 0,1,2三类
     # tfidf和类别等特征
-    x_all = gen_general_features(train_files + test_files)
-    x_train = x_all[:len(y_train)]
-    x_test = x_all[len(y_train):]
+    # x_all = gen_general_features(train_files + test_files)
+    # x_train = x_all[:len(y_train)]
+    # x_test = x_all[len(y_train):]
     # 拼起来
     # x_train = []
     # x_test = []
@@ -59,8 +59,19 @@ if __name__ == '__main__':
     x_train, y_train = up_resampling_3classes(x_train, y_train)
 
     # 训练
+    # print 'Train...'
+    # model = network_fit(x_train, y_train, 3)  # 分三类
+
+    print 'Grid search...'
+    param = grid_search_network(x_train, y_train, 3, 5)
+
+    # 训练
     print 'Train...'
-    model = train_model(x_train, y_train, 3)  # 分三类
+    model = network_fit(x_train, y_train, 3, drop_rate=param['drop_rate'], optimizer=param['optimizer'],
+                                 hidden_unit1=param['hidden_unit1'], hidden_unit2=param['hidden_unit2'],
+                                 activation=param['activation'], init_mode=param['init_mode'], epochs=param['epoch'])
+    # 分三类
+    # 交叉验证反而选出来的更差？？
 
     # 测试
     print 'Test...'

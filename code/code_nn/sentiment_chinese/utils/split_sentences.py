@@ -60,9 +60,13 @@ def cut_sentences(cutlist, lines):
 # 参数：source文件全部文本，返回值：句子及每句起始偏移量
 def split_sentences(whole_text):
     # 先把各标签中的段落抽出来
-    paras = re.findall(r'>([\s\S]*?)<', whole_text)  # 是否会有非html标签的><，注意看具体文件
+    if re.search(r'</a>', whole_text) is not None:
+        paras = re.findall(r'>([\s\S]*?)<[^a^i][^a]', whole_text)
+        # [^a^i][^a]一个字符的标签不行，这里具体看没有这种情况才这么写
+    else:
+        paras = re.findall(r'>([\s\S]*?)<', whole_text)  # 一般是新闻文件，有<P>
     # 再分句
-    cutlist = "。！？\n".decode('utf-8')  # 看情况加,，要不要按逗号加
+    cutlist = "。！？\n".decode('utf-8')  # 看情况加,，要不要按逗号加；可试试不同符号，不同级别分句效果
     texts = []
     for para in paras:
         if para != u'\n' and para != '':
@@ -81,8 +85,8 @@ def split_sentences(whole_text):
         start = index + len(text)
         sen = {'offset': index, 'text': text}  # 为了后面定位准确，这里没有去除前后的\n
         sencs.append(sen)
-    res_data = json.dumps(sencs, ensure_ascii=False, encoding="gb2312")
-    print res_data
+    # res_data = json.dumps(sencs, ensure_ascii=False, encoding="gb2312")
+    # print res_data
     return sencs
 
 
@@ -118,7 +122,7 @@ def find_context(word_offset, sencs, whole_text, above, below):
                     break  # 上文没有，则再上文都没有
             # 下文
             for i in range(min(slen-1-mid, below+1)):
-                # 判断和和下句之间有没有html标签
+                # 判断和下句之间有没有html标签
                 sub_string = whole_text[sencs[mid+i]['offset']+len(sencs[mid]['text']): sencs[mid+i+1]['offset']]
                 if re.search(r'<[^>]+>', sub_string) is None:  # 如果有，不要下句
                     cx[i+1] = sencs[mid+i+1]
@@ -168,6 +172,13 @@ def context_dict_to_string(context_dict, above, below):
             context = context.replace('\n', '')  # 去掉换行
     # if context == '':
     #     context = "None"
+
+    # 先在这里去掉链接等标签？？去掉的话target在句子中的具体offset没法找了，不用则可去；用则先不去，在处理特征时再去
+    re_h = re.compile('</?\w+[^>]*>')  # HTML标签
+    # print context
+    context = re_h.sub("", context)
+    # print context
+
     return context
 
 

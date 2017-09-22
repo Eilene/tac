@@ -62,7 +62,7 @@ def extract_entity_each_file(source_filepath, ere_filepath, annotation_filepath,
         annotation_root = annotation_file.documentElement
         annotation_sentiment_list = annotation_root.getElementsByTagName('sentiment_annotations')
         annotation_sentiment_list = annotation_sentiment_list[0]
-        annotation_entity_list = annotation_sentiment_list.getElementsByTagName('entity')  # 实际上是entity mention
+        annotation_entity_list = annotation_sentiment_list.getElementsByTagName('entity')  # 实际上是en`tity mention
 
     for i in range(len(entity_list)):
         # entity信息
@@ -181,7 +181,7 @@ def rel_arg_entity_info(entity_list, rel_arg_id, rel_arg_mention_id, rel_arg_tex
 
                     # 从上下文中进一步提取窗口词
                     window_length = 10
-                    sen = rel_arg_context_dict[0]['text']
+                    sen = rel_arg_context_dict[0]['text']  # 这里没有出现none的情况
                     sen_offset = rel_arg_context_dict[0]['offset']
                     window_text = get_window_text(window_length, sen, sen_offset, rel_arg_text, rel_arg_mention_offset)
                     return rel_arg_entity_type, rel_arg_entity_specificity, rel_arg_mention_noun_type, \
@@ -227,7 +227,7 @@ def rel_arg_filler_info(filler_list, rel_arg_id, rel_arg_text, sentences):
 
 
 def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepath, part_name, with_none):
-    print part_name
+    # print part_name
     relation_records_each_file = []
 
     source_fp = open(source_filepath)
@@ -615,6 +615,7 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
     for parent, dirnames, ere_filenames in os.walk(ere_dir):
         for ere_filename in ere_filenames:  # 有的source有多个ere和annotation，所以有后缀，一对多
             part_name = ere_filename[:-ere_suffix_length]
+            print part_name
             source_filepath = source_dir + part_name + ".cmp.txt"
             ere_filepath = ere_dir + ere_filename
             annotation_filepath = ''
@@ -632,7 +633,7 @@ def traverse_and_write_mid_files(source_dir, ere_dir, annotation_dir,
                 # if os.path.exists(source_filepath) is False:  # 这里part_name的length小时，依然算，新闻会被加进来
                 #     print source_filepath
                 #     continue
-                print prefix_length, source_filepath
+                # print prefix_length, source_filepath
                 ere_filepath = ere_dir + ere_filename
                 if annotation_dir != '':
                     annotation_filepath = annotation_dir + part_name + ".best.xml"
