@@ -271,7 +271,7 @@ def extract_relation_each_file(source_filepath, ere_filepath, annotation_filepat
                         #                 " " + relation_mention_id)
                         label_polarity = st_em[0].getAttribute('polarity')
                         break
-                if with_none == False and label_polarity == 'none':
+                if with_none is False and label_polarity == 'none':
                     break  # 如果为none则丢弃该样本
 
             # rel_arg是entity

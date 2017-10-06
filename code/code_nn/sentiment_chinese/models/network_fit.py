@@ -12,7 +12,7 @@ from src.sentiment_chinese.features.general_features import gen_general_features
 
 # 模型训练
 def network_fit(x_train, y_train, num_classes, drop_rate=0.5, optimizer='adam', hidden_unit1=32, hidden_unit2=16,
-                 activation="relu", init_mode="uniform", batch_size=8, epochs=50):
+                 activation="relu", init_mode="uniform", batch_size=8, epochs=50):  # 默认改成交叉验证最好的？但是之前验证找出的反而不太好
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 

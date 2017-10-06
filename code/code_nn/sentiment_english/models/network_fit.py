@@ -33,7 +33,7 @@ def network_fit(x_train, y_train, num_classes, drop_rate=0.5, optimizer='adam', 
     model.add(Dense(num_classes, activation='softmax'))
 
     model.summary()
-    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
     # 训练
     early_stopping = EarlyStopping(monitor='val_loss', patience=epochs * 0.1)

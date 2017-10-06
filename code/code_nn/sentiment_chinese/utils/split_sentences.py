@@ -66,7 +66,7 @@ def split_sentences(whole_text):
     else:
         paras = re.findall(r'>([\s\S]*?)<', whole_text)  # 一般是新闻文件，有<P>
     # 再分句
-    cutlist = "。！？\n".decode('utf-8')  # 看情况加,，要不要按逗号加；可试试不同符号，不同级别分句效果
+    cutlist = "。！？\n".decode('utf-8')  # 看情况加,，要不要按逗号加；可试试不同符号，不同级别分句效果；逗号分好像不行
     texts = []
     for para in paras:
         if para != u'\n' and para != '':

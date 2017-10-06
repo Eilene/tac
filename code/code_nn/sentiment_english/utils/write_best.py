@@ -95,8 +95,8 @@ def write_best_file(file_info, no, output_dir):
 
             etrigger = doc.createElement('trigger')
             etrigger_text = doc.createTextNode(str(file_info['event'][i]['trigger_text']))
-            event.setAttribute('offset', str(file_info['event'][i]['trigger_offset']))
-            event.setAttribute('length', str(file_info['event'][i]['trigger_length']))
+            etrigger.setAttribute('offset', str(file_info['event'][i]['trigger_offset']))
+            etrigger.setAttribute('length', str(file_info['event'][i]['trigger_length']))
             etrigger.appendChild(etrigger_text)
             event.appendChild(etrigger)
 

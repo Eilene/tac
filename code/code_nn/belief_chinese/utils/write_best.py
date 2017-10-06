@@ -4,6 +4,7 @@ import xml.dom.minidom
 import os
 import shutil
 import numpy as np
+import copy
 
 
 # 输出best.xml
@@ -35,21 +36,20 @@ def write_best_file(file_info, no, output_dir):
             rbeliefs = doc.createElement('beliefs')
             relation.appendChild(rbeliefs)
 
-            rbelief = doc.createElement('belief')
-            rbelief.setAttribute('type', str(file_info['relation'][i]['predict_type']))
-            rbelief.setAttribute('polarity', 'pos')
-            rbelief.setAttribute('sarcasm', 'no')
-            rbeliefs.appendChild(rbelief)
+            belief = doc.createElement('belief')
+            belief.setAttribute('type', str(file_info['relation'][i]['predict_type']))
+            belief.setAttribute('polarity', 'pos')
+            belief.setAttribute('sarcasm', 'no')
+            rbeliefs.appendChild(belief)
 
-            if file_info['relation'][i]['predict_type'] != 'na':
-                if 'predict_source_id' in file_info['relation'][i]:  # 即非空
-                    rsource = doc.createElement('source')
-                    rsource.setAttribute('ere_id', str(file_info['relation'][i]['predict_source_id']))
-                    rsource.setAttribute('offset', str(file_info['relation'][i]['predict_source_offset']))
-                    rsource.setAttribute('length', str(file_info['relation'][i]['predict_source_length']))
-                    rsource_text = doc.createTextNode(file_info['relation'][i]['predict_source_text'])
-                    rsource.appendChild(rsource_text)
-                    rbelief.appendChild(rsource)
+            if 'predict_source_id' in file_info['relation'][i]:  # 即非空
+                rsource = doc.createElement('source')
+                rsource.setAttribute('ere_id', str(file_info['relation'][i]['predict_source_id']))
+                rsource.setAttribute('offset', str(file_info['relation'][i]['predict_source_offset']))
+                rsource.setAttribute('length', str(file_info['relation'][i]['predict_source_length']))
+                rsource_text = doc.createTextNode(file_info['relation'][i]['predict_source_text'])
+                rsource.appendChild(rsource_text)
+                belief.appendChild(rsource)
 
     # events
     if 'event' in file_info:
@@ -62,29 +62,58 @@ def write_best_file(file_info, no, output_dir):
 
             etrigger = doc.createElement('trigger')
             etrigger_text = doc.createTextNode(str(file_info['event'][i]['trigger_text']))
-            event.setAttribute('offset', str(file_info['event'][i]['trigger_offset']))
-            event.setAttribute('length', str(file_info['event'][i]['trigger_length']))
+            etrigger.setAttribute('offset', str(file_info['event'][i]['trigger_offset']))
+            etrigger.setAttribute('length', str(file_info['event'][i]['trigger_length']))
             etrigger.appendChild(etrigger_text)
             event.appendChild(etrigger)
 
             ebeliefs = doc.createElement('beliefs')
             event.appendChild(ebeliefs)
 
-            ebelief = doc.createElement('belief')
-            ebelief.setAttribute('type', str(file_info['event'][i]['predict_type']))
-            ebelief.setAttribute('polarity', 'pos')
-            ebelief.setAttribute('sarcasm', 'no')
-            ebeliefs.appendChild(ebelief)
+            belief = doc.createElement('belief')
+            belief.setAttribute('type', str(file_info['event'][i]['predict_type']))
+            belief.setAttribute('polarity', 'pos')
+            belief.setAttribute('sarcasm', 'no')
+            ebeliefs.appendChild(belief)
 
-            if file_info['event'][i]['predict_type'] != 'na':
-                if 'predict_source_id' in file_info['event'][i]:  # 即非空
-                    esource = doc.createElement('source')
-                    esource.setAttribute('ere_id', str(file_info['event'][i]['predict_source_id']))
-                    esource.setAttribute('offset', str(file_info['event'][i]['predict_source_offset']))
-                    esource.setAttribute('length', str(file_info['event'][i]['predict_source_length']))
-                    esource_text = doc.createTextNode(file_info['event'][i]['predict_source_text'])
-                    esource.appendChild(esource_text)
-                    ebelief.appendChild(esource)
+            if 'predict_source_id' in file_info['event'][i]:  # 即非空
+                esource = doc.createElement('source')
+                esource.setAttribute('ere_id', str(file_info['event'][i]['predict_source_id']))
+                esource.setAttribute('offset', str(file_info['event'][i]['predict_source_offset']))
+                esource.setAttribute('length', str(file_info['event'][i]['predict_source_length']))
+                esource_text = doc.createTextNode(file_info['event'][i]['predict_source_text'])
+                esource.appendChild(esource_text)
+                belief.appendChild(esource)
+
+            # 补：arguments
+            arguments = doc.createElement('arguments')
+            event.appendChild(arguments)
+            for em_arg in file_info['em_args']:
+                if em_arg['event_mention_id'] == file_info['event'][i]['event_mention_id']:
+                    arg = doc.createElement('arg')
+                    arguments.appendChild(arg)
+                    arg.setAttribute('ere_id', str(em_arg['em_arg_mention_id']))
+                    arg.setAttribute('offset', str(em_arg['em_arg_mention_offset']))
+                    arg.setAttribute('length', str(em_arg['em_arg_mention_length']))
+                    text = doc.createElement('text')
+                    arg.appendChild(text)
+                    text_text = doc.createTextNode(em_arg['em_arg_text'])
+                    text.appendChild(text_text)
+                    ebeliefs = doc.createElement('beliefs')
+                    arg.appendChild(ebeliefs)
+                    belief = doc.createElement('belief')
+                    belief.setAttribute('type', str(file_info['event'][i]['predict_type']))
+                    belief.setAttribute('polarity', 'pos')
+                    belief.setAttribute('sarcasm', 'no')
+                    ebeliefs.appendChild(belief)
+                    if 'predict_source_id' in file_info['event'][i]:  # 即非空
+                        esource = doc.createElement('source')
+                        esource.setAttribute('ere_id', str(file_info['event'][i]['predict_source_id']))
+                        esource.setAttribute('offset', str(file_info['event'][i]['predict_source_offset']))
+                        esource.setAttribute('length', str(file_info['event'][i]['predict_source_length']))
+                        esource_text = doc.createTextNode(file_info['event'][i]['predict_source_text'])
+                        esource.appendChild(esource_text)
+                        belief.appendChild(esource)
 
     f = open(output_dir + file_info['filename'] + '.best.xml', 'w')
     # f.write(doc.toprettyxml(indent='\t', encoding='utf-8'))

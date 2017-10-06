@@ -59,17 +59,18 @@ if __name__ == '__main__':
     x_train, y_train = up_resampling_3classes(x_train, y_train)
 
     # 训练
-    # print 'Train...'
-    # model = network_fit(x_train, y_train, 3)  # 分三类
-
-    print 'Grid search...'
-    param = grid_search_network(x_train, y_train, 3, 5)
-
-    # 训练
     print 'Train...'
-    model = network_fit(x_train, y_train, 3, drop_rate=param['drop_rate'], optimizer=param['optimizer'],
-                                 hidden_unit1=param['hidden_unit1'], hidden_unit2=param['hidden_unit2'],
-                                 activation=param['activation'], init_mode=param['init_mode'], epochs=param['epoch'])
+    model = network_fit(x_train, y_train, 3)  # 分三类
+    # print model.total_loss  # 不对。。
+
+    # print 'Grid search...'
+    # param = grid_search_network(x_train, y_train, 3, 5)
+    #
+    # # 训练
+    # print 'Train...'
+    # model = network_fit(x_train, y_train, 3, drop_rate=param['drop_rate'], optimizer=param['optimizer'],
+    #                              hidden_unit1=param['hidden_unit1'], hidden_unit2=param['hidden_unit2'],
+    #                              activation=param['activation'], init_mode=param['init_mode'], epochs=param['epoch'])
     # 分三类
     # 交叉验证反而选出来的更差？？
 

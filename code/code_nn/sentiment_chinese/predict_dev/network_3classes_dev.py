@@ -39,19 +39,19 @@ if __name__ == '__main__':
     y_test = get_merged_labels(test_files)  # 0,1,2三类
 
     # 词向量特征
-    # total_clip_length = 20
-    # embeddings_index, dim = read_embedding_index(word2vec_model_path)
-    # x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
-    # x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    total_clip_length = 20
+    embeddings_index, dim = read_embedding_index(word2vec_model_path)
+    x_train = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
+    x_test = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
     # from src.sentiment_chinese.features.concat_embedding_features import gen_concat_embedding_features
     # x_train = gen_concat_embedding_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     # x_test = gen_concat_embedding_features(test_files, embeddings_index, dim, total_clip_length)  # 提取特征
     # 完全不准。。
 
     # tfidf和类别等特征
-    x_all = gen_general_features(train_files + test_files)
-    x_train = x_all[:len(y_train)]
-    x_test = x_all[len(y_train):]
+    # x_all = gen_general_features(train_files + test_files)
+    # x_train = x_all[:len(y_train)]
+    # x_test = x_all[len(y_train):]
     # 拼起来
     # x_train = []
     # x_test = []
@@ -83,6 +83,7 @@ if __name__ == '__main__':
     # 训练
     print 'Train...'
     model = network_fit(x_train, y_train, 3, epochs=50)  # 分三类
+    print model.get_losses_for(None)
 
     # print 'Grid search...'
     # param = grid_search_network(x_train, y_train, 3, 5)
