@@ -273,7 +273,11 @@ def gen_matrix_features(file_records, embeddings_index, dim, clip_length):
         if 'event' in file_info:
             event_df = file_info['event']
             if len(event_df) != 0:
-                x_event = gen_event_features(event_df, file_info['em_args'], embeddings_index, dim, clip_length)
+                if 'em_args' in file_info:
+                    em_args_df = file_info['em_args']
+                else:
+                    em_args_df = None
+                x_event = gen_event_features(event_df, em_args_df, embeddings_index, dim, clip_length)
                 features.extend(x_event)
 
     return features

@@ -135,13 +135,13 @@ def gen_general_features(file_records):
 
     # context层次
     # tfidf
-    vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='spanish', max_features=300, binary=True)
+    vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='english', max_features=300, binary=True)
     tfidf_features = vec.fit_transform(contexts).toarray()
     tfidf_features = tfidf_features.tolist()
     # 词性计数，情感词计数
-    context_pos_count_list = pos_senti_count(contexts)
+    # context_pos_count_list = pos_senti_count(contexts)
     # 词性、情感具体值列表
-    context_pos_senti = pos_senti_list(contexts)
+    # context_pos_senti = pos_senti_list(contexts)
 
     # target层次
     # 实体类型特征
@@ -149,16 +149,16 @@ def gen_general_features(file_records):
     # 词性计数，情感词计数
     # text_pos_count_list = pos_senti_count(texts)
     # 词性、情感具体值列表
-    text_pos_senti = pos_senti_list(texts)
+    # text_pos_senti = pos_senti_list(texts)
 
     # 合并所有特征
     features = tfidf_features
     for i in range(len(features)):
-        features[i].extend(context_pos_count_list[i])
+        # features[i].extend(context_pos_count_list[i])
         # features[i].extend(text_pos_count_list[i])
         features[i].extend(type_one_hot[i])
-        features[i].extend(context_pos_senti[i])
-        features[i].extend(text_pos_senti[i])
+        # features[i].extend(context_pos_senti[i])
+        # features[i].extend(text_pos_senti[i])
 
     print len(features[0])
 

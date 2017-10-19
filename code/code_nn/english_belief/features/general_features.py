@@ -6,6 +6,9 @@ from pattern.en import sentiment
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 # def gen_all_general_features(contexts):
 #     vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='english', max_features=300, binary=True)
@@ -139,7 +142,7 @@ def gen_general_features(file_records):
     tfidf_features = vec.fit_transform(contexts).toarray()
     tfidf_features = tfidf_features.tolist()
     # 词性计数，情感词计数
-    context_pos_count_list = pos_senti_count(contexts)
+    # context_pos_count_list = pos_senti_count(contexts)
     # 词性、情感具体值列表
     context_pos_senti = pos_senti_list(contexts)
 
@@ -147,15 +150,15 @@ def gen_general_features(file_records):
     # 实体类型特征
     type_one_hot = one_hot(types)
     # 词性计数，情感词计数
-    # text_pos_count_list = pos_senti_count(texts)
+    text_pos_count_list = pos_senti_count(texts)
     # 词性、情感具体值列表
     text_pos_senti = pos_senti_list(texts)
 
     # 合并所有特征
     features = tfidf_features
     for i in range(len(features)):
-        features[i].extend(context_pos_count_list[i])
-        # features[i].extend(text_pos_count_list[i])
+        # features[i].extend(context_pos_count_list[i])
+        features[i].extend(text_pos_count_list[i])
         features[i].extend(type_one_hot[i])
         features[i].extend(context_pos_senti[i])
         features[i].extend(text_pos_senti[i])
@@ -173,7 +176,7 @@ def pos_senti_count(texts):
     neg_senti_count_list = []
     for i in range(len(texts)):
         # 词性
-        pos = nltk.pos_tag(nltk.word_tokenize(texts[i]))
+        pos = nltk.pos_tag(nltk.word_tokenize(str(texts[i])))
         # print pos
         # 一边生成词典，一边生成特征
         pos_count = [0] * len(pos_name)
@@ -219,7 +222,7 @@ def pos_senti_list(texts):
     reserved_dim = 10  # 统一维数
     for i in range(len(texts)):
         # 词性
-        pos = nltk.pos_tag(nltk.word_tokenize(texts[i]))
+        pos = nltk.pos_tag(nltk.word_tokenize(str(texts[i])))
         length = len(pos)
 
         # 情感极性，主动性

@@ -75,7 +75,7 @@ def get_doc2vec_dataform(texts):
         token_text = u""
         for word in words:
             # print word
-            token_text += word.decode('utf-8') + u' '
+            token_text += str(word).decode('utf-8') + u' '
         token_text = token_text[:-1]
         token_text += u'\n'
         token_texts.append(token_text)

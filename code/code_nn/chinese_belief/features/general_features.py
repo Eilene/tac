@@ -8,6 +8,10 @@ import pandas as pd
 import jieba
 import jieba.posseg
 
+# import sys
+# reload(sys)
+# sys.setdefaultencoding('utf-8')
+
 # def gen_all_general_features(contexts):
 #     vec = TfidfVectorizer(min_df=1, ngram_range=(1, 2), stop_words='english', max_features=300, binary=True)
 #     tfidf_features = vec.fit_transform(contexts).toarray()
@@ -140,7 +144,7 @@ def gen_general_features(file_records):
     tokenized_contexts = []
     for context in contexts:
         token_text = ''
-        words = jieba.cut(context)
+        words = jieba.cut(str(context))
         for word in words:
             token_text += word + ' '  # 空格连接，则下面可自动分了
             # print token_text
@@ -154,7 +158,7 @@ def gen_general_features(file_records):
     print res_data
     tfidf_features = tfidf_features.tolist()
     # 词性计数，情感词计数
-    context_pos_count_list = pos_senti_count(contexts)
+    # context_pos_count_list = pos_senti_count(contexts)
     # 词性、情感具体值列表
     context_pos_senti = pos_senti_list(contexts)
 
@@ -170,7 +174,7 @@ def gen_general_features(file_records):
     features = tfidf_features
     # features = type_one_hot
     for i in range(len(features)):
-        features[i].extend(context_pos_count_list[i])
+        # features[i].extend(context_pos_count_list[i])
         features[i].extend(text_pos_count_list[i])
         features[i].extend(type_one_hot[i])
         features[i].extend(context_pos_senti[i])
@@ -189,7 +193,7 @@ def pos_senti_count(texts):
     neg_senti_count_list = []
     for i in range(len(texts)):
         # 词性
-        pos = jieba.posseg.cut(texts[i])
+        pos = jieba.posseg.cut(str(texts[i]))
         # print pos
         # 一边生成词典，一边生成特征
         pos_count = [0] * len(pos_name)
@@ -235,12 +239,12 @@ def pos_senti_list(texts):
     reserved_dim = 10  # 统一维数
     for i in range(len(texts)):
         # 词性
-        seg = jieba.posseg.cut(texts[i])
+        seg = jieba.posseg.cut(str(texts[i]))
         length = 0
         pos = []
         for p in seg:
             pos.append(p.flag)
-            print p.flag
+            # print p.flag
             length += 1
 
         # 情感极性，主动性

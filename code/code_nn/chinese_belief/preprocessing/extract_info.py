@@ -521,7 +521,6 @@ if __name__ == '__main__':
     traverse_and_write_mid_files(train_source_dir, train_ere_dir, train_annotation_dir,
                                  train_entity_info_dir, train_relation_info_dir,
                                  train_event_info_dir, train_em_args_dir, True)
-
     print 'test data'
     print 'df'
     traverse_and_write_mid_files(test_df_source_dir, test_df_ere_dir, '',
@@ -532,12 +531,12 @@ if __name__ == '__main__':
                                  test_nw_entity_info_dir, test_nw_relation_info_dir,
                                  test_nw_event_info_dir, test_nw_em_args_dir, True)
 
-    print 'test data, predict ere'
-    print 'df'
-    traverse_and_write_mid_files(test_df_source_dir, predicted_ere_dir, '',
-                                 pred_ere_test_df_entity_info_dir, pred_ere_test_df_relation_info_dir,
-                                 pred_ere_test_df_event_info_dir, pred_ere_test_df_em_args_dir, True, 'df')
-    print 'nw'
-    traverse_and_write_mid_files(test_nw_source_dir, predicted_ere_dir, '',
-                                 pred_ere_test_nw_entity_info_dir, pred_ere_test_nw_relation_info_dir,
-                                 pred_ere_test_nw_event_info_dir, pred_ere_test_nw_em_args_dir, True, 'nw')
+    # print 'test data, predict ere'
+    # print 'df'
+    # traverse_and_write_mid_files(test_df_source_dir, predicted_ere_dir, '',
+    #                              pred_ere_test_df_entity_info_dir, pred_ere_test_df_relation_info_dir,
+    #                              pred_ere_test_df_event_info_dir, pred_ere_test_df_em_args_dir, True, 'df')
+    # print 'nw'
+    # traverse_and_write_mid_files(test_nw_source_dir, predicted_ere_dir, '',
+    #                              pred_ere_test_nw_entity_info_dir, pred_ere_test_nw_relation_info_dir,
+    #                              pred_ere_test_nw_event_info_dir, pred_ere_test_nw_em_args_dir, True, 'nw')

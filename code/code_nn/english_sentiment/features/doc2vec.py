@@ -77,11 +77,12 @@ if __name__ == '__main__':
     file_records = df_file_records + nw_file_records + test_df_file_records + test_nw_file_records
     contexts = get_contexts(file_records)
 
-    print 'Read external data...'
+    # print 'Read external data...'
     imdb_texts, label = read_imdb_data(imdb_dir)
 
     print 'Write doctext...'
     texts = get_doc2vec_dataform(contexts+imdb_texts)
+    # texts = get_doc2vec_dataform(contexts)
     write_doc2vec_input(texts, doctext_path)
 
     print 'Doc2vec...'

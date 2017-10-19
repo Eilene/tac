@@ -11,7 +11,7 @@ from src.english_sentiment.features.embedding_vector_features import gen_embeddi
 
 # 模型训练
 def network_fit(x_train, y_train, num_classes, drop_rate=0.5, optimizer='adam', hidden_unit1=32, hidden_unit2=16,
-                 activation="relu", init_mode="uniform", batch_size=8, epochs=50):
+                 activation="relu", init_mode="uniform", batch_size=8, epochs=20):
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 

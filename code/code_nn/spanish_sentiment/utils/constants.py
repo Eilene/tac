@@ -1,5 +1,7 @@
 # coding=utf-8
 
+from src.globals import *
+
 # spa, st
 # 文件路径
 
@@ -20,36 +22,58 @@ train_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_tra
 train_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_train/relation_info/'
 train_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_train/event_info/'
 train_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_train/em_args/'
-test_df_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/entity_info/'
-test_df_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/relation_info/'
-test_df_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/event_info/'
-test_df_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/em_args/'
-test_nw_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/entity_info/'
-test_nw_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/relation_info/'
-test_nw_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/event_info/'
-test_nw_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/em_args/'
-pred_ere_test_df_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/entity_info/'
-pred_ere_test_df_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/relation_info/'
-pred_ere_test_df_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/event_info/'
-pred_ere_test_df_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/em_args/'
-pred_ere_test_nw_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/entity_info/'
-pred_ere_test_nw_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/relation_info/'
-pred_ere_test_nw_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/event_info/'
-pred_ere_test_nw_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/em_args/'
+if use_predicted_ere is False:
+    test_df_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/entity_info/'
+    test_df_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/relation_info/'
+    test_df_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/event_info/'
+    test_df_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_test/df/em_args/'
+    test_nw_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/entity_info/'
+    test_nw_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/relation_info/'
+    test_nw_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/event_info/'
+    test_nw_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_test/nw/em_args/'
+else:
+    test_df_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/entity_info/'
+    test_df_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/relation_info/'
+    test_df_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/event_info/'
+    test_df_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/df/em_args/'
+    test_nw_entity_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/entity_info/'
+    test_nw_relation_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/relation_info/'
+    test_nw_event_info_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/event_info/'
+    test_nw_em_args_dir = '../../../data/output/spanish_sentiment/middle_files_pred_ere_test/nw/em_args/'
 
 # 结果路径
 dev_df_predict_dir = '../../../data/output/spanish_sentiment/predict_dev/df/'
 dev_nw_predict_dir = '../../../data/output/spanish_sentiment/predict_dev/nw/'
-test_df_predict_dir = '../../../data/output/spanish_sentiment/predict_test/df/'
-test_nw_predict_dir = '../../../data/output/spanish_sentiment/predict_test/nw/'
+if use_predicted_ere is False:
+    test_df_predict_dir = '../../../data/output/spanish_sentiment/predict_test/df/'
+    test_nw_predict_dir = '../../../data/output/spanish_sentiment/predict_test/nw/'
+else:
+    test_df_predict_dir = '../../../data/output/spanish_sentiment/predict_test_r/df/'
+    test_nw_predict_dir = '../../../data/output/spanish_sentiment/predict_test_r/nw/'
 dev_df_y_predict = '../../../data/output/spanish_sentiment/y_predict_dev/df/'
 dev_nw_y_predict = '../../../data/output/spanish_sentiment/y_predict_dev/nw/'
-test_df_y_predict = '../../../data/output/spanish_sentiment/y_predict_test/df/'
-test_nw_y_predict = '../../../data/output/spanish_sentiment/y_predict_test/nw/'
+if use_predicted_ere is False:
+    test_df_y_predict = '../../../data/output/spanish_sentiment/y_predict_test/df/'
+    test_nw_y_predict = '../../../data/output/spanish_sentiment/y_predict_test/nw/'
+else:
+    test_df_y_predict = '../../../data/output/spanish_sentiment/y_predict_test_r/df/'
+    test_nw_y_predict = '../../../data/output/spanish_sentiment/y_predict_test_r/nw/'
 
 # 外部数据路径
 # 没有词向量，或者可现训练，先不管了
 
 # 生成其他数据路径
-doctext_path = '../../../data/output/spanish_sentiment/doctext.txt'
-docmodel_path = '../../../data/output/spanish_sentiment/doc2vec_model_200.txt'
+if use_predicted_ere is False:
+    doctext_path = '../../../data/output/spanish_sentiment/doctext.txt'
+    docmodel_path = '../../../data/output/spanish_sentiment/doc2vec_model_200.txt'
+    dev_df_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_dev_df.csv'
+    dev_nw_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_dev_nw.csv'
+    test_df_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_test_df.csv'
+    test_nw_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_test_nw.csv'
+else:
+    doctext_path = '../../../data/output/spanish_sentiment/doctext_r.txt'
+    docmodel_path = '../../../data/output/spanish_sentiment/doc2vec_model_200_r.txt'
+    dev_df_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_dev_df_r.csv'
+    dev_nw_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_dev_nw_r.csv'
+    test_df_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_test_df_r.csv'
+    test_nw_general_feature_filepath = '../../../data/output/spanish_sentiment/general_features_test_nw_r.csv'

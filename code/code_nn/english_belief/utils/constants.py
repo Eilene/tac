@@ -1,5 +1,7 @@
 # coding=utf-8
 
+from src.globals import *
+
 # eng, be
 # 文件路径
 
@@ -20,32 +22,42 @@ train_entity_info_dir = '../../../data/output/english_belief/middle_files_train/
 train_relation_info_dir = '../../../data/output/english_belief/middle_files_train/relation_info/'
 train_event_info_dir = '../../../data/output/english_belief/middle_files_train/event_info/'
 train_em_args_dir = '../../../data/output/english_belief/middle_files_train/em_args/'
-test_df_entity_info_dir = '../../../data/output/english_belief/middle_files_test/df/entity_info/'
-test_df_relation_info_dir = '../../../data/output/english_belief/middle_files_test/df/relation_info/'
-test_df_event_info_dir = '../../../data/output/english_belief/middle_files_test/df/event_info/'
-test_df_em_args_dir = '../../../data/output/english_belief/middle_files_test/df/em_args/'
-test_nw_entity_info_dir = '../../../data/output/english_belief/middle_files_test/nw/entity_info/'
-test_nw_relation_info_dir = '../../../data/output/english_belief/middle_files_test/nw/relation_info/'
-test_nw_event_info_dir = '../../../data/output/english_belief/middle_files_test/nw/event_info/'
-test_nw_em_args_dir = '../../../data/output/english_belief/middle_files_test/nw/em_args/'
-pred_ere_test_df_entity_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/entity_info/'
-pred_ere_test_df_relation_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/relation_info/'
-pred_ere_test_df_event_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/event_info/'
-pred_ere_test_df_em_args_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/em_args/'
-pred_ere_test_nw_entity_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/entity_info/'
-pred_ere_test_nw_relation_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/relation_info/'
-pred_ere_test_nw_event_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/event_info/'
-pred_ere_test_nw_em_args_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/em_args/'
+if use_predicted_ere is False:
+    test_df_entity_info_dir = '../../../data/output/english_belief/middle_files_test/df/entity_info/'
+    test_df_relation_info_dir = '../../../data/output/english_belief/middle_files_test/df/relation_info/'
+    test_df_event_info_dir = '../../../data/output/english_belief/middle_files_test/df/event_info/'
+    test_df_em_args_dir = '../../../data/output/english_belief/middle_files_test/df/em_args/'
+    test_nw_entity_info_dir = '../../../data/output/english_belief/middle_files_test/nw/entity_info/'
+    test_nw_relation_info_dir = '../../../data/output/english_belief/middle_files_test/nw/relation_info/'
+    test_nw_event_info_dir = '../../../data/output/english_belief/middle_files_test/nw/event_info/'
+    test_nw_em_args_dir = '../../../data/output/english_belief/middle_files_test/nw/em_args/'
+else:
+    test_df_entity_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/entity_info/'
+    test_df_relation_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/relation_info/'
+    test_df_event_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/event_info/'
+    test_df_em_args_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/df/em_args/'
+    test_nw_entity_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/entity_info/'
+    test_nw_relation_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/relation_info/'
+    test_nw_event_info_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/event_info/'
+    test_nw_em_args_dir = '../../../data/output/english_belief/middle_files_pred_ere_test/nw/em_args/'
 
 # 结果路径
 dev_df_predict_dir = '../../../data/output/english_belief/predict_dev/df/'
 dev_nw_predict_dir = '../../../data/output/english_belief/predict_dev/nw/'
-test_df_predict_dir = '../../../data/output/english_belief/predict_test/df/'
-test_nw_predict_dir = '../../../data/output/english_belief/predict_test/nw/'
+if use_predicted_ere is False:
+    test_df_predict_dir = '../../../data/output/english_belief/predict_test/df/'
+    test_nw_predict_dir = '../../../data/output/english_belief/predict_test/nw/'
+else:
+    test_df_predict_dir = '../../../data/output/english_belief/predict_test_r/df/'
+    test_nw_predict_dir = '../../../data/output/english_belief/predict_test_r/nw/'
 dev_df_y_predict = '../../../data/output/english_belief/y_predict_dev/df/'
 dev_nw_y_predict = '../../../data/output/english_belief/y_predict_dev/nw/'
-test_df_y_predict = '../../../data/output/english_belief/y_predict_test/df/'
-test_nw_y_predict = '../../../data/output/english_belief/y_predict_test/nw/'
+if use_predicted_ere is False:
+    test_df_y_predict = '../../../data/output/english_belief/y_predict_test/df/'
+    test_nw_y_predict = '../../../data/output/english_belief/y_predict_test/nw/'
+else:
+    test_df_y_predict = '../../../data/output/english_belief/y_predict_test_r/df/'
+    test_nw_y_predict = '../../../data/output/english_belief/y_predict_test_r/nw/'
 
 # 外部数据路径
 imdb_dir = '../../../data/external_data/aclImdb/'
@@ -54,5 +66,9 @@ glove_840b_300d_path = '../../../data/external_data/glove.840B.300d/glove.840B.3
 # 英文情感词典……
 
 # 生成其他数据路径
-doctext_path = '../../../data/output/english_belief/doctext.txt'
-docmodel_path = '../../../data/output/english_belief/doc2vec_model_200.txt'
+if use_predicted_ere is False:
+    doctext_path = '../../../data/output/english_belief/doctext.txt'
+    docmodel_path = '../../../data/output/english_belief/doc2vec_model_200.txt'
+else:
+    doctext_path = '../../../data/output/english_belief/doctext_r.txt'
+    docmodel_path = '../../../data/output/english_belief/doc2vec_model_200_r.txt'

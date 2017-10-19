@@ -19,7 +19,7 @@ def get_labels(str_labels):
 def get_merged_labels(file_records):
     labels = []
     for i in range(len(file_records)):
-        for name in ['entity', 'relation', 'event']:
+        for name in ['relation', 'event']:
             if name in file_records[i]:
                 str_labels = file_records[i][name]['label_type']
                 f_labels = get_labels(str_labels)

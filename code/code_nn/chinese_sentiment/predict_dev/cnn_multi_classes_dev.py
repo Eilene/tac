@@ -2,8 +2,13 @@
 from src.chinese_sentiment.models.cnn_fit import *
 from src.chinese_sentiment.utils.resampling import up_resampling_3classes
 
-if __name__ == '__main__':
-    mode = True  # True:DF,false:NW
+
+def cnn_multi_classes_dev(genre):
+    print
+    if genre is True:
+        print '*** DF ***'
+    else:
+        print '*** NW ***'
 
     # 读取各文件中间信息
     print 'Read data...'
@@ -13,15 +18,13 @@ if __name__ == '__main__':
     print 'DF files:', len(df_file_records), ' NW files:', len(nw_file_records)
 
     # DF全部作为训练数据，NW分成训练和测试数据, 合并训练的NW和DF，即可用原来流程进行训练测试
-    if mode is True:
-        print '*** DF ***'
+    if genre is True:
         print 'Split into train and test dataset...'
-        portion = 0.6
+        portion = 0.8
         trainnum = int(len(df_file_records) * portion)
         train_files = df_file_records[:trainnum]
         test_files = df_file_records[trainnum:]
     else:
-        print '*** NW ***'
         print 'Merge and split into train and test dataset...'
         portion = 0.2
         nw_trainnum = int(len(nw_file_records) * portion)
@@ -60,21 +63,40 @@ if __name__ == '__main__':
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
     # y_predict保存至csv
+    if genre is True:
+        dev_y_predict_dir = dev_df_y_predict
+    else:
+        dev_y_predict_dir = dev_nw_y_predict
     if os.path.exists(dev_y_predict_dir) is False:
         os.makedirs(dev_y_predict_dir)
     # 分类器预测的
     y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
-    y_predict_df.to_csv(dev_y_predict_dir+'cnn_3classes_y_predict.csv', index=False)
+    y_predict_df.to_csv(dev_y_predict_dir+'cnn_multi_classes_y_predict.csv', index=False)
 
     # 测试结果写入记录
     to_dict(test_files)
     attach_predict_labels(test_files, y_predict)
 
     # 寻找源
-    print 'Find sources... '
-    find_sources(test_files, train_source_dir, train_ere_dir)
+    if genre is True:
+        print 'Find sources... '
+        find_sources(test_files, train_source_dir, train_ere_dir)
 
-    # 写入
-    print 'Write into best files...'
-    write_best_files(test_files, dev_predict_dir)
+        # 写入文件
+        print 'Write into best files...'
+        write_best_files(test_files, dev_df_predict_dir)
+
+    else:
+        # 写入文件
+        print 'Write into best files...'
+        write_best_files(test_files, dev_nw_predict_dir)
+
+if __name__ == '__main__':
+    cnn_multi_classes_dev(True)
+    cnn_multi_classes_dev(False)
+
+# 2\3轮怎么全0了，不行，先放弃；可下采样或减少轮数
+# 1轮都1了
+# test数据报错
+
 

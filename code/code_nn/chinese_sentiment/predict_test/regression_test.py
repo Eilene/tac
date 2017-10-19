@@ -42,13 +42,28 @@ def regression_test(genre):
     print "Samples extraction..."
 
     # 标签
-    # y_train = get_merged_labels(train_files)
+    y_train = get_merged_labels(train_files)
 
     # tfidf和类别等特征
-    # trainlen = len(y_train)
-    # x_all = gen_general_features(train_files+test_files)
-    # x_train1 = x_all[:trainlen]
-    # x_test1 = x_all[trainlen:]
+    import pandas as pd
+    if genre is True:
+        filepath = test_df_general_feature_filepath
+    else:
+        filepath = test_nw_general_feature_filepath
+    trainlen = len(y_train)
+
+    x_all = gen_general_features(train_files + test_files)
+    x_train = x_all[:trainlen]
+    x_test = x_all[trainlen:]
+    x_all_df = pd.DataFrame(x_all)
+    x_all_df.to_csv(filepath, index=False)
+    print len(x_all), trainlen
+
+    # x_all_df = pd.read_csv(filepath)
+    # x_all = x_all_df.values.tolist()
+    # print len(x_all), len(y_train)+len(y_test), len(x_all[0])
+    # x_train = x_all[:trainlen]
+    # x_test = x_all[trainlen:]
 
     # 词向量特征
     # total_clip_length = 50
@@ -56,30 +71,30 @@ def regression_test(genre):
     # x_train2 = gen_embeddings_vector_features(train_files, embeddings_index, dim, total_clip_length)
     # x_test2 = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)
 
-    print 'Load doc2vec...'
-    model = Doc2Vec.load(docmodel_path)
-    doc2vec_model = model.docvecs
-    y_train_df = get_merged_labels(train_df_file_records)
-    y_train_nw = get_merged_labels(train_nw_file_records)
-    test_df_num = get_sample_num(test_df_file_records)
-    test_nw_num = get_sample_num(test_nw_file_records)
-    # print test_df_num, test_nw_num
-    if genre is True:
-        y_train = y_train_df
-        x_train = []
-        for i in range(len(y_train)):
-            x_train.append(doc2vec_model[i].tolist())
-        x_test = []
-        for i in range(test_df_num):
-            x_test.append(doc2vec_model[len(y_train) + len(y_train_nw) + i].tolist())
-    else:
-        y_train = y_train_df + y_train_nw
-        x_train = []
-        for i in range(len(y_train)):
-            x_train.append(doc2vec_model[i].tolist())
-        x_test = []
-        for i in range(test_nw_num):
-            x_test.append(doc2vec_model[len(y_train) + test_df_num + i].tolist())
+    # print 'Load doc2vec...'
+    # model = Doc2Vec.load(docmodel_path)
+    # doc2vec_model = model.docvecs
+    # y_train_df = get_merged_labels(train_df_file_records)
+    # y_train_nw = get_merged_labels(train_nw_file_records)
+    # test_df_num = get_sample_num(test_df_file_records)
+    # test_nw_num = get_sample_num(test_nw_file_records)
+    # # print test_df_num, test_nw_num
+    # if genre is True:
+    #     y_train = y_train_df
+    #     x_train = []
+    #     for i in range(len(y_train)):
+    #         x_train.append(doc2vec_model[i].tolist())
+    #     x_test = []
+    #     for i in range(test_df_num):
+    #         x_test.append(doc2vec_model[len(y_train) + len(y_train_nw) + i].tolist())
+    # else:
+    #     y_train = y_train_df + y_train_nw
+    #     x_train = []
+    #     for i in range(len(y_train)):
+    #         x_train.append(doc2vec_model[i].tolist())
+    #     x_test = []
+    #     for i in range(test_nw_num):
+    #         x_test.append(doc2vec_model[len(y_train) + test_df_num + i].tolist())
 
     # 特征拼接
     # x_train = x_train2
@@ -139,4 +154,4 @@ def regression_test(genre):
 
 if __name__ == '__main__':
     regression_test(True)
-    regression_test(False)
+    # regression_test(False)

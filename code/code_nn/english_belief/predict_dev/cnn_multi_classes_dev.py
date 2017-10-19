@@ -1,6 +1,5 @@
 # coding=utf-8
-from src.english_sentiment.models.cnn_fit import *
-from src.english_sentiment.utils.resampling import up_resampling_3classes
+from src.english_belief.models.cnn_fit import *
 
 
 def cnn_multi_classes_dev(genre):
@@ -39,11 +38,10 @@ def cnn_multi_classes_dev(genre):
     x_train = gen_matrix_features(train_files, embeddings_index, dim, total_clip_length)  # 提取特征
     y_train = get_merged_labels(train_files)  # 0,1,2三类
     print 'Resampling...'
-    x_train, y_train = up_resampling_3classes(x_train, y_train)  # 重采样
     x_train = convert_features(x_train)  # 转换为通道模式
     # 训练
     print 'Train...'
-    model = cnn_fit(x_train, y_train, 3)  # 分三类
+    model = cnn_fit(x_train, y_train, 4)  # 分三类
 
     # 测试部分
     # 提取特征及标签
@@ -92,11 +90,8 @@ def cnn_multi_classes_dev(genre):
         write_best_files(test_files, dev_nw_predict_dir)
 
 if __name__ == '__main__':
-    cnn_multi_classes_dev(True)
+    # cnn_multi_classes_dev(True)
     cnn_multi_classes_dev(False)
-
-# 2\3轮怎么全0了，不行，先放弃；可下采样或减少轮数
-# 1轮都1了
-# test数据报错
+# 还是全cb了
 
 

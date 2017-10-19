@@ -1,11 +1,28 @@
 # coding=utf-8
 
-from sklearn import linear_model
+import numpy as np
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.externals import joblib
 
 from src.english_sentiment.features.general_features import *
 from src.english_sentiment.features.embedding_vector_features import gen_embeddings_vector_features
 from src.english_sentiment.utils.all_utils_package import *
 from gensim.models.doc2vec import Doc2Vec
+
+def only_two_classes(x, y, label):
+    x_new = []
+    y_new = []
+
+    for i in range(len(y)):
+        if y[i] != label:
+            x_new.append(x[i])
+            y_new.append(y[i])
+
+    return x_new, y_new
+
+clf_name = 'rf'
 
 
 def regression_dev(genre):
@@ -68,7 +85,6 @@ def regression_dev(genre):
     # x_train = x_all[:trainlen]
     # x_test = x_all[trainlen:]
 
-
     # 词向量特征
     # total_clip_length = 50
     # embeddings_index, dim = read_embedding_index(glove_6b_100d_path)  # 100 or 300?
@@ -98,28 +114,59 @@ def regression_dev(genre):
     print 'Train labels:', y_train
     print 'Test labels:', y_test
 
+    # 三个分类器的标签
+    print "Labels regenerate..."
+    x_train1, y_train1 = only_two_classes(x_train, y_train, 2)  # none vs neg
+    x_train2, y_train2 = only_two_classes(x_train, y_train, 1)  # none vs pos
+    x_train3, y_train3 = only_two_classes(x_train, y_train, 0)  # neg vs pos
+
+    # 重采样
+    print "Resampling..."
+    negnum = y_train3.count(1)
+    posnum = y_train3.count(2)
+    x_train1, y_train1 = up_resampling_2classes(x_train1, y_train1)
+    x_train2, y_train2 = up_resampling_2classes(x_train2, y_train2)
+
     # 训练
     print 'Train...'
-    # regr = linear_model.LinearRegression(normalize=True)  # 使用线性回归
-    regr = linear_model.RidgeCV(alphas=[0.01, 0.1, 1.0, 10.0])
-    regr.fit(x_train, y_train)
+    if clf_name == 'svm':
+        clf1 = svm.SVC()
+        clf2 = svm.SVC()
+        clf3 = svm.SVC()
+    elif clf_name == 'rf':
+        clf1 = RandomForestClassifier(oob_score=True, random_state=10)
+        clf2 = RandomForestClassifier(oob_score=True, random_state=10)
+        clf3 = RandomForestClassifier(oob_score=True, random_state=10)
+    else:
+        clf1 = LogisticRegression()
+        clf2 = LogisticRegression()
+        clf3 = LogisticRegression()
+    clf1.fit(x_train1, y_train1)
+    clf2.fit(x_train2, y_train2)
+    clf3.fit(x_train3, y_train3)
 
     # 测试
     print 'Test...'
-    y_predict = regr.predict(X=x_test)  # 预测
-    print y_predict
+    y_predict1 = clf1.predict(x_test)
+    y_predict2 = clf2.predict(x_test)
+    y_predict3 = clf3.predict(x_test)
+
+    # 生成最终y_predict
+    # 每个样本，若只有1个1，则对应该类；多个或0个，则概率最大类别为输入类别（按理说应该用输出值。。）
+    y_predict = [0] * len(y_test)
     for i in range(len(y_predict)):
-        if y_predict[i] < 0.7:
-            y_predict[i] = 0
-        elif y_predict[i] < 1.7:
-            y_predict[i] = 1
-        else:
-            y_predict[i] = 2
-    y_predict = [int(y) for y in y_predict]
+        y_candid = [y_predict1[i], y_predict2[i], y_predict3[i]]
+        y_candid = np.asarray(y_candid)
+        counts = np.bincount(y_candid)
+        y = np.argmax(counts)
+        y_predict[i] = y
 
     # 评价
     print 'Evalution: '
     print 'Test labels: ', y_test
+    print 'Predict labels1:', y_predict1
+    print 'Predict labels2: ', y_predict2
+    print 'Predict labels3: ', y_predict2
     print 'Predict labels: ', y_predict
     evaluation_3classes(y_test, y_predict)  # 3类的测试评价
 
@@ -132,7 +179,7 @@ def regression_dev(genre):
         os.makedirs(dev_y_predict_dir)
     # 分类器预测的
     y_predict_df = pd.DataFrame(y_predict, columns=['y_predict'])
-    y_predict_df.to_csv(dev_y_predict_dir+'regression_y_predict.csv', index=False)
+    y_predict_df.to_csv(dev_y_predict_dir+clf_name+'_1vs1_y_predict.csv', index=False)
 
     # 测试结果写入记录
     to_dict(test_files)
@@ -155,3 +202,5 @@ def regression_dev(genre):
 if __name__ == '__main__':
     # regression_dev(True)
     regression_dev(False)
+
+# 不行，全0了；可下采样

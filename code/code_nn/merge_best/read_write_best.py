@@ -26,13 +26,13 @@ def read_st_file(filepath):
             text_em = entity_list[i].getElementsByTagName('text')
             text_em = text_em[0]
             record['text'] = text_em.firstChild.data
-            be_em = entity_list[i].getElementsByTagName('sentiment')
-            be_em = be_em[0]
-            polarity = be_em.getAttribute('polarity')
+            st_em = entity_list[i].getElementsByTagName('sentiment')
+            st_em = st_em[0]
+            polarity = st_em.getAttribute('polarity')
             record['polarity'] = polarity
-            record['sarcasm'] = be_em.getAttribute('sarcasm')
+            record['sarcasm'] = st_em.getAttribute('sarcasm')
             if polarity != 'none':
-                source_em = be_em.getElementsByTagName('source')
+                source_em = st_em.getElementsByTagName('source')
                 if len(source_em) != 0:
                     source_em = source_em[0]
                     record['source_ere_id'] = source_em.getAttribute('ere_id')
@@ -53,13 +53,13 @@ def read_st_file(filepath):
                 record['trigger_offset'] = trigger.getAttribute('offset')
                 record['trigger_length'] = trigger.getAttribute('length')
                 record['trigger_text'] = trigger.firstChild.data
-            be_em = entity_list[i].getElementsByTagName('sentiment')
-            be_em = be_em[0]
-            polarity = be_em.getAttribute('polarity')
+            st_em = relation_list[i].getElementsByTagName('sentiment')
+            st_em = st_em[0]
+            polarity = st_em.getAttribute('polarity')
             record['polarity'] = polarity
-            record['sarcasm'] = be_em.getAttribute('sarcasm')
+            record['sarcasm'] = st_em.getAttribute('sarcasm')
             if polarity != 'none':
-                source_em = be_em.getElementsByTagName('source')
+                source_em = st_em.getElementsByTagName('source')
                 if len(source_em) != 0:
                     source_em = source_em[0]
                     record['source_ere_id'] = source_em.getAttribute('ere_id')
@@ -79,13 +79,13 @@ def read_st_file(filepath):
             record['trigger_offset'] = trigger.getAttribute('offset')
             record['trigger_length'] = trigger.getAttribute('length')
             record['trigger_text'] = trigger.firstChild.data
-            be_em = event_list[i].getElementsByTagName('sentiment')
-            be_em = be_em[0]
-            polarity = be_em.getAttribute('polarity')
+            st_em = event_list[i].getElementsByTagName('sentiment')
+            st_em = st_em[0]
+            polarity = st_em.getAttribute('polarity')
             record['polarity'] = polarity
-            record['sarcasm'] = be_em.getAttribute('sarcasm')
+            record['sarcasm'] = st_em.getAttribute('sarcasm')
             if polarity != 'none':
-                source_em = be_em.getElementsByTagName('source')
+                source_em = st_em.getElementsByTagName('source')
                 if len(source_em) != 0:
                     source_em = source_em[0]
                     record['source_ere_id'] = source_em.getAttribute('ere_id')
@@ -181,108 +181,110 @@ def write_best_file(st_file_record_dict, be_file_record_dict, filepath, no):
     doc.appendChild(best)
     
     # ** belief **
-    be = doc.createElement('belief_annotations')
-    best.appendChild(be)
+    if be_file_record_dict is not None:
 
-    # relations
-    if 'relation' in be_file_record_dict:
-        relations = doc.createElement('relations')
-        be.appendChild(relations)
-        for i in range(len(be_file_record_dict['relation'])):
-            relation = doc.createElement('relation')
-            relation.setAttribute('ere_id', str(be_file_record_dict['relation'][i]['ere_id']))
-            relations.appendChild(relation)
+        be = doc.createElement('belief_annotations')
+        best.appendChild(be)
 
-            if 'trigger_length' in st_file_record_dict['relation'][i]:
-                trigger = doc.createElement('trigger')
-                trigger_text = doc.createTextNode(str(be_file_record_dict['relation'][i]['trigger_text']))
-                trigger.setAttribute('offset', str(int(be_file_record_dict['relation'][i]['trigger_offset'])))
-                trigger.setAttribute('length', str(int(be_file_record_dict['relation'][i]['trigger_length'])))
-                trigger.appendChild(trigger_text)
-                relation.appendChild(trigger)
+        # relations
+        if 'relation' in be_file_record_dict:
+            relations = doc.createElement('relations')
+            be.appendChild(relations)
+            for i in range(len(be_file_record_dict['relation'])):
+                relation = doc.createElement('relation')
+                relation.setAttribute('ere_id', str(be_file_record_dict['relation'][i]['ere_id']))
+                relations.appendChild(relation)
 
-            rbeliefs = doc.createElement('beliefs')
-            relation.appendChild(rbeliefs)
+                if 'trigger_length' in st_file_record_dict['relation'][i]:
+                    trigger = doc.createElement('trigger')
+                    trigger_text = doc.createTextNode(str(be_file_record_dict['relation'][i]['trigger_text']))
+                    trigger.setAttribute('offset', str(int(be_file_record_dict['relation'][i]['trigger_offset'])))
+                    trigger.setAttribute('length', str(int(be_file_record_dict['relation'][i]['trigger_length'])))
+                    trigger.appendChild(trigger_text)
+                    relation.appendChild(trigger)
 
-            rbelief = doc.createElement('belief')
-            rbelief.setAttribute('type', str(be_file_record_dict['relation'][i]['type']))
-            rbelief.setAttribute('polarity', str(be_file_record_dict['relation'][i]['polarity']))
-            rbelief.setAttribute('sarcasm', str(be_file_record_dict['relation'][i]['polarity']))
-            rbeliefs.appendChild(rbelief)
+                rbeliefs = doc.createElement('beliefs')
+                relation.appendChild(rbeliefs)
 
-            if 'source_ere_id' in be_file_record_dict['relation'][i]:  # 即非空
-                rsource = doc.createElement('source')
-                rsource.setAttribute('ere_id', str(be_file_record_dict['relation'][i]['source_ere_id']))
-                rsource.setAttribute('offset', str(be_file_record_dict['relation'][i]['source_offset']))
-                rsource.setAttribute('length', str(be_file_record_dict['relation'][i]['source_length']))
-                rsource_text = doc.createTextNode(be_file_record_dict['relation'][i]['source_text'])
-                rsource.appendChild(rsource_text)
-                rbelief.appendChild(rsource)
+                rbelief = doc.createElement('belief')
+                rbelief.setAttribute('type', str(be_file_record_dict['relation'][i]['type']))
+                rbelief.setAttribute('polarity', str(be_file_record_dict['relation'][i]['polarity']))
+                rbelief.setAttribute('sarcasm', str(be_file_record_dict['relation'][i]['sarcasm']))
+                rbeliefs.appendChild(rbelief)
 
-    # events
-    if 'event' in be_file_record_dict:
-        events = doc.createElement('events')
-        be.appendChild(events)
-        for i in range(len(be_file_record_dict['event'])):
-            event = doc.createElement('event')
-            event.setAttribute('ere_id', str(be_file_record_dict['event'][i]['ere_id']))
-            events.appendChild(event)
+                if 'source_ere_id' in be_file_record_dict['relation'][i]:  # 即非空
+                    rsource = doc.createElement('source')
+                    rsource.setAttribute('ere_id', str(be_file_record_dict['relation'][i]['source_ere_id']))
+                    rsource.setAttribute('offset', str(be_file_record_dict['relation'][i]['source_offset']))
+                    rsource.setAttribute('length', str(be_file_record_dict['relation'][i]['source_length']))
+                    rsource_text = doc.createTextNode(be_file_record_dict['relation'][i]['source_text'])
+                    rsource.appendChild(rsource_text)
+                    rbelief.appendChild(rsource)
 
-            etrigger = doc.createElement('trigger')
-            etrigger_text = doc.createTextNode(str(be_file_record_dict['event'][i]['trigger_text']))
-            etrigger.setAttribute('offset', str(be_file_record_dict['event'][i]['trigger_offset']))
-            etrigger.setAttribute('length', str(be_file_record_dict['event'][i]['trigger_length']))
-            etrigger.appendChild(etrigger_text)
-            event.appendChild(etrigger)
+        # events
+        if 'event' in be_file_record_dict:
+            events = doc.createElement('events')
+            be.appendChild(events)
+            for i in range(len(be_file_record_dict['event'])):
+                event = doc.createElement('event')
+                event.setAttribute('ere_id', str(be_file_record_dict['event'][i]['ere_id']))
+                events.appendChild(event)
 
-            ebeliefs = doc.createElement('beliefs')
-            event.appendChild(ebeliefs)
+                etrigger = doc.createElement('trigger')
+                etrigger_text = doc.createTextNode(str(be_file_record_dict['event'][i]['trigger_text']))
+                etrigger.setAttribute('offset', str(be_file_record_dict['event'][i]['trigger_offset']))
+                etrigger.setAttribute('length', str(be_file_record_dict['event'][i]['trigger_length']))
+                etrigger.appendChild(etrigger_text)
+                event.appendChild(etrigger)
 
-            ebelief = doc.createElement('belief')
-            ebelief.setAttribute('type', str(be_file_record_dict['event'][i]['type']))
-            ebelief.setAttribute('polarity', 'pos')
-            ebelief.setAttribute('sarcasm', 'no')
-            ebeliefs.appendChild(ebelief)
+                ebeliefs = doc.createElement('beliefs')
+                event.appendChild(ebeliefs)
 
-            if 'source_ere_id' in be_file_record_dict['event'][i]:  # 即非空
-                esource = doc.createElement('source')
-                esource.setAttribute('ere_id', str(be_file_record_dict['event'][i]['source_ere_id']))
-                esource.setAttribute('offset', str(be_file_record_dict['event'][i]['source_offset']))
-                esource.setAttribute('length', str(be_file_record_dict['event'][i]['source_length']))
-                esource_text = doc.createTextNode(be_file_record_dict['event'][i]['source_text'])
-                esource.appendChild(esource_text)
-                ebelief.appendChild(esource)
+                ebelief = doc.createElement('belief')
+                ebelief.setAttribute('type', str(be_file_record_dict['event'][i]['type']))
+                ebelief.setAttribute('polarity', str(be_file_record_dict['event'][i]['polarity']))
+                ebelief.setAttribute('sarcasm', str(be_file_record_dict['event'][i]['sarcasm']))
+                ebeliefs.appendChild(ebelief)
 
-            # argments
-            if 'em_args' in be_file_record_dict['event'][i]:
-                arguments = doc.createElement('arguments')
-                event.appendChild(arguments)
-                for em_arg in be_file_record_dict['event'][i]['em_args']:
-                    arg = doc.createElement('arg')
-                    arguments.appendChild(arg)
-                    arg.setAttribute('ere_id', str(em_arg['ere_id']))
-                    arg.setAttribute('offset', str(em_arg['offset']))
-                    arg.setAttribute('length', str(em_arg['length']))
-                    text = doc.createElement('text')
-                    arg.appendChild(text)
-                    text_text = doc.createTextNode(em_arg['text'])
-                    text.appendChild(text_text)
-                    # beliefs
-                    ebeliefs = doc.createElement('beliefs')
-                    arg.appendChild(ebeliefs)
-                    ebelief = doc.createElement('belief')
-                    ebelief.setAttribute('type', str(be_file_record_dict['event'][i]['type']))
-                    ebelief.setAttribute('polarity', 'pos')
-                    ebelief.setAttribute('sarcasm', 'no')
-                    ebeliefs.appendChild(ebelief)
-                    if 'source_ere_id' in be_file_record_dict['event'][i]:  # 即非空
-                        esource = doc.createElement('source')
-                        esource.setAttribute('ere_id', str(be_file_record_dict['event'][i]['source_ere_id']))
-                        esource.setAttribute('offset', str(be_file_record_dict['event'][i]['source_offset']))
-                        esource.setAttribute('length', str(be_file_record_dict['event'][i]['source_length']))
-                        esource_text = doc.createTextNode(be_file_record_dict['event'][i]['source_text'])
-                        esource.appendChild(esource_text)
-                        ebelief.appendChild(esource)
+                if 'source_ere_id' in be_file_record_dict['event'][i]:  # 即非空
+                    esource = doc.createElement('source')
+                    esource.setAttribute('ere_id', str(be_file_record_dict['event'][i]['source_ere_id']))
+                    esource.setAttribute('offset', str(be_file_record_dict['event'][i]['source_offset']))
+                    esource.setAttribute('length', str(be_file_record_dict['event'][i]['source_length']))
+                    esource_text = doc.createTextNode(be_file_record_dict['event'][i]['source_text'])
+                    esource.appendChild(esource_text)
+                    ebelief.appendChild(esource)
+
+                # argments
+                if 'em_args' in be_file_record_dict['event'][i]:
+                    arguments = doc.createElement('arguments')
+                    event.appendChild(arguments)
+                    for em_arg in be_file_record_dict['event'][i]['em_args']:
+                        arg = doc.createElement('arg')
+                        arguments.appendChild(arg)
+                        arg.setAttribute('ere_id', str(em_arg['ere_id']))
+                        arg.setAttribute('offset', str(em_arg['offset']))
+                        arg.setAttribute('length', str(em_arg['length']))
+                        text = doc.createElement('text')
+                        arg.appendChild(text)
+                        text_text = doc.createTextNode(em_arg['text'])
+                        text.appendChild(text_text)
+                        # beliefs
+                        ebeliefs = doc.createElement('beliefs')
+                        arg.appendChild(ebeliefs)
+                        ebelief = doc.createElement('belief')
+                        ebelief.setAttribute('type', str(be_file_record_dict['event'][i]['type']))
+                        ebelief.setAttribute('polarity', str(be_file_record_dict['event'][i]['polarity']))
+                        ebelief.setAttribute('sarcasm', str(be_file_record_dict['event'][i]['sarcasm']))
+                        ebeliefs.appendChild(ebelief)
+                        if 'source_ere_id' in be_file_record_dict['event'][i]:  # 即非空
+                            esource = doc.createElement('source')
+                            esource.setAttribute('ere_id', str(be_file_record_dict['event'][i]['source_ere_id']))
+                            esource.setAttribute('offset', str(be_file_record_dict['event'][i]['source_offset']))
+                            esource.setAttribute('length', str(be_file_record_dict['event'][i]['source_length']))
+                            esource_text = doc.createTextNode(be_file_record_dict['event'][i]['source_text'])
+                            esource.appendChild(esource_text)
+                            ebelief.appendChild(esource)
 
     # **sentiment**
     st = doc.createElement('sentiment_annotations')
@@ -344,7 +346,7 @@ def write_best_file(st_file_record_dict, be_file_record_dict, filepath, no):
 
             rsentiment = doc.createElement('sentiment')
             rsentiment.setAttribute('polarity', str(st_file_record_dict['relation'][i]['polarity']))
-            rsentiment.setAttribute('sarcasm', 'no')
+            rsentiment.setAttribute('sarcasm', str(st_file_record_dict['relation'][i]['sarcasm']))
             rsentiments.appendChild(rsentiment)
 
             if st_file_record_dict['relation'][i]['polarity'] != 'none':
@@ -378,7 +380,7 @@ def write_best_file(st_file_record_dict, be_file_record_dict, filepath, no):
 
             esentiment = doc.createElement('sentiment')
             esentiment.setAttribute('polarity', str(st_file_record_dict['event'][i]['polarity']))
-            esentiment.setAttribute('sarcasm', 'no')
+            esentiment.setAttribute('sarcasm', str(st_file_record_dict['event'][i]['sarcasm']))
             esentiments.appendChild(esentiment)
 
             if st_file_record_dict['event'][i]['polarity'] != 'none':

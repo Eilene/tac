@@ -48,10 +48,10 @@ def regression_dev(genre):
     y_test = get_merged_labels(test_files)  # 0,1,2三类
 
     # tfidf和类别等特征
-    # trainlen = len(y_train)
-    # x_all = gen_general_features(train_files+test_files)
-    # x_train1 = x_all[:trainlen]
-    # x_test1 = x_all[trainlen:]
+    trainlen = len(y_train)
+    x_all = gen_general_features(train_files+test_files)
+    x_train = x_all[:trainlen]
+    x_test = x_all[trainlen:]
 
     # 词向量特征
     # total_clip_length = 50
@@ -60,15 +60,15 @@ def regression_dev(genre):
     # x_test2 = gen_embeddings_vector_features(test_files, embeddings_index, dim, total_clip_length)
 
     # doc2vec特征
-    print 'Load doc2vec...'
-    model = Doc2Vec.load(docmodel_path)
-    doc2vec_model = model.docvecs
-    x_train = []
-    for i in range(len(y_train)):
-        x_train.append(doc2vec_model[i].tolist())
-    x_test = []
-    for i in range(len(y_test)):
-        x_test.append(doc2vec_model[len(y_train)+i].tolist())
+    # print 'Load doc2vec...'
+    # model = Doc2Vec.load(docmodel_path)
+    # doc2vec_model = model.docvecs
+    # x_train = []
+    # for i in range(len(y_train)):
+    #     x_train.append(doc2vec_model[i].tolist())
+    # x_test = []
+    # for i in range(len(y_test)):
+    #     x_test.append(doc2vec_model[len(y_train)+i].tolist())
 
     # 特征拼接
     # x_train = x_train2
